@@ -42,6 +42,13 @@ public:
       value = val;
    }
 
+   virtual void setBypass( bool bp ) {
+      bypass = bp;
+   }
+   virtual bool getBypass( ) { return bypass; }
+   virtual bool clickIsInBypass(const VSTGUI::CPoint &w) { return bypassButtonRect.pointInside(w); }
+   bool bypass = false;
+   
    virtual void onMouseMoveDelta(VSTGUI::CPoint& where, const VSTGUI::CButtonState& buttons, double dx, double dy) override;
    virtual double getMouseDeltaScaling(VSTGUI::CPoint& where, const VSTGUI::CButtonState& buttons) override;
    virtual bool onWheel(const VSTGUI::CPoint& where, const float &distance, const VSTGUI::CButtonState& buttons) override;
@@ -52,7 +59,7 @@ public:
    int dispval;
    bool click_is_editpart, event_is_drag, is_metacontroller, bipolar;
    char label[16];
-   VSTGUI::CRect  MCRect;
+   VSTGUI::CRect  MCRect, bypassButtonRect;
    VSTGUI::CPoint LastPoint;
    VSTGUI::CPoint SourcePoint;
    float OldValue;

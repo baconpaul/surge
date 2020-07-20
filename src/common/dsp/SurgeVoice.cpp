@@ -489,7 +489,7 @@ template <bool first> void SurgeVoice::calc_ctrldata(QuadFilterChainState* Q, in
       int dst_id = iter->destination_id;
       float depth = iter->depth;
 
-      if (modsources[src_id])
+      if (modsources[src_id] && ! iter->bypassed && ! modsources[src_id]->get_bypassed() )
       {
          localcopy[dst_id].f += depth * modsources[src_id]->output;
       }
@@ -505,7 +505,7 @@ template <bool first> void SurgeVoice::calc_ctrldata(QuadFilterChainState* Q, in
        while( iter != scene->modulation_scene.end() )
        {
            int src_id = iter->source_id;
-           if( src_id == ms_aftertouch && modsources[src_id] )
+           if( src_id == ms_aftertouch && modsources[src_id] && ! iter->bypassed && ! modsources[src_id]->get_bypassed() )
            {
                int dst_id = iter->destination_id;
                // I don't THINK we need this but am not sure the global params are in my localcopy span

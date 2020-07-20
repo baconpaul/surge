@@ -2646,6 +2646,12 @@ int32_t SurgeGUIEditor::controlModifierClicked(CControl* control, CButtonState b
          {
             possibleSources.push_back((modsources)(cms->alternateId));
          }
+         
+         if( cms->clickIsInBypass( where ) )
+         {
+            addCallbackMenu( contextMenu, "IS ByPASS", []() { std::cout << "Yup" << std::endl; } );
+         }
+
 
          for( auto thisms : possibleSources )
          {

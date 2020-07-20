@@ -280,6 +280,16 @@ void CModulationSourceButton::draw(CDrawContext* dc)
       bmp->draw(dc, sze, where, 0xff);
    }
 
+   CRect modPowerRect(sze);
+   modPowerRect.right = modPowerRect.left + 12;
+   modPowerRect.top ++;
+   modPowerRect.bottom = modPowerRect.top + 12;
+   modPowerRect.inset( 2, 2 );
+   
+   bypassButtonRect = modPowerRect;
+   dc->setFillColor( kRedCColor );
+   dc->drawRect( modPowerRect, kDrawFilled );
+
    setDirty(false);
 }
 
@@ -291,6 +301,11 @@ CMouseEventResult CModulationSourceButton::onMouseDown(CPoint& where, const CBut
       this->hideCursor = Surge::Storage::getUserDefaultValue(storage, "showCursorWhileEditing", 0);
 
    super::onMouseDown(where, buttons);
+
+   if( bypassButtonRect.pointInside(where)) {
+      std::cout << "IN BYPASS " << std::endl;
+   }
+
 
    if (!getMouseEnabled())
       return kMouseDownEventHandledButDontNeedMovedOrUpEvents;

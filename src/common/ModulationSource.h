@@ -171,6 +171,7 @@ struct ModulationRouting
    int source_id;
    int destination_id;
    float depth;
+   bool bypassed = false;
 };
 
 class ModulationSource
@@ -212,6 +213,11 @@ public:
    virtual void set_bipolar(bool b)
    {}
    float output;
+
+   virtual void get_bypassed() { return bypassed; }
+   virtual void set_bypassed( bool da ) { bypassed = da; }
+private:
+   bool bypassed = false;
 };
 
 class ControllerModulationSource : public ModulationSource
