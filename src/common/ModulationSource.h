@@ -214,8 +214,8 @@ public:
    {}
    float output;
 
-   virtual void get_bypassed() { return bypassed; }
-   virtual void set_bypassed( bool da ) { bypassed = da; }
+   inline bool get_bypassed() { return bypassed; }
+   inline void set_bypassed( bool da ) { bypassed = da; }
 private:
    bool bypassed = false;
 };

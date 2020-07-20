@@ -2519,8 +2519,11 @@ void SurgeSynthesizer::processControl()
          int n = storage.getPatch().scene[s].modulation_scene.size();
          for (int i = 0; i < n; i++)
          {
-            int src_id = storage.getPatch().scene[s].modulation_scene[i].source_id;
-            if (storage.getPatch().scene[s].modsources[src_id])
+            auto *routing = &storage.getPatch().scene[s].modulation_scene[i];
+            int src_id = routing->source_id;
+            if (storage.getPatch().scene[s].modsources[src_id] &&
+                ! storage.getPatch().scene[s].modsources[src_id]->get_bypassed() &&
+                ! routing->bypassed )
             {
                int dst_id = storage.getPatch().scene[s].modulation_scene[i].destination_id;
                float depth = storage.getPatch().scene[s].modulation_scene[i].depth;
@@ -2542,8 +2545,10 @@ void SurgeSynthesizer::processControl()
       int src_id = storage.getPatch().modulation_global[i].source_id;
       int dst_id = storage.getPatch().modulation_global[i].destination_id;
       float depth = storage.getPatch().modulation_global[i].depth;
-      storage.getPatch().globaldata[dst_id].f +=
-          depth * storage.getPatch().scene[0].modsources[src_id]->output;
+      bool bypass = storage.getPatch().modulation_global[i].bypassed;
+      if( ! bypass && ! storage.getPatch().scene[0].modsources[src_id]->get_bypassed() )
+         storage.getPatch().globaldata[dst_id].f +=
+            depth * storage.getPatch().scene[0].modsources[src_id]->output;
    }
 
    if (switch_toggled_queued)
