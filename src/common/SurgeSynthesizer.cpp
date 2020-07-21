@@ -91,12 +91,6 @@ SurgeSynthesizer::SurgeSynthesizer(PluginLayer* parent, std::string suppliedData
 
    allNotesOff();
 
-   for( int i=0; i<n_modsources; ++i )
-   {
-      modsourcebypassbyscene[0][i] = false;
-      modsourcebypassbyscene[1][i] = false;
-   }
-   
    for (int i = 0; i < MAX_VOICES; i++)
    {
       voices_usedby[0][i] = 0;
@@ -1948,6 +1942,7 @@ void SurgeSynthesizer::prepareModsourceDoProcess(int scenemask)
          for (int i = 0; i < n_modsources; i++)
          {
             storage.getPatch().scene[scene].modsource_doprocess[i] = false;
+            storage.getPatch().scene[scene].modsource_bypass[i] = false;
          }
 
          for (int j = 0; j < 3; j++)
@@ -3007,8 +3002,8 @@ void SurgeSynthesizer::loadFromDawExtraState() {
 
 void SurgeSynthesizer::setModSourceBypass(int scene, modsources thisms, bool bypass )
 {
+   std::cout << "SetModsourceBypass " << scene << " " << thisms << " " << bypass << std::endl;
    if( storage.getPatch().scene[scene].modsources[thisms] )
       storage.getPatch().scene[scene].modsources[thisms]->set_bypassed( bypass );
-   modsourcebypassbyscene[scene][thisms] = bypass;
-
+   storage.getPatch().scene[scene].modsource_bypass[thisms] = bypass;
 }

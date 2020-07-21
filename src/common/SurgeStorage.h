@@ -419,6 +419,8 @@ struct SurgeSceneStorage
    std::vector<ModulationSource*> modsources;
 
    bool modsource_doprocess[n_modsources];
+   bool modsource_bypass[n_modsources];
+
 };
 
 const int n_stepseqsteps = 16;

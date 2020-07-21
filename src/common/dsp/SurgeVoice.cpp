@@ -447,8 +447,8 @@ template <bool first> void SurgeVoice::calc_ctrldata(QuadFilterChainState* Q, in
 {
    for( int i=0; i<n_modsources; ++i )
    {
-      //if(  modsources[i] )
-      //modsources[i]->set_bypassed(synthesizer->modsourcebypassbyscene[scene][i]);
+      if( modsources[i] )
+         modsources[i]->set_bypassed(scene->modsource_bypass[i]);
    }
    
    // Always process LFO1 so the gate retrigger always work

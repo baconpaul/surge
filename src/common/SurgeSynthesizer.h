@@ -212,7 +212,6 @@ public:
 
    int current_category_id = 0;
    bool modsourceused[n_modsources];
-   bool modsourcebypassbyscene[2][n_modsources];
    bool midiprogramshavechanged = false;
 
    bool switch_toggled_queued, release_if_latched[2], release_anyway[2];
