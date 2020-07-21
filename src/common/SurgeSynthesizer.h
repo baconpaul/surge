@@ -150,6 +150,9 @@ public:
    bool setModulation(long ptag, modsources modsource, float value);
    float getModulation(long ptag, modsources modsource);
    float getModDepth(long ptag, modsources modsource);
+
+   void setModSourceBypass(int scene, modsources thisms, bool bypass );
+
    void clearModulation(long ptag, modsources modsource, bool clearEvenIfInvalid = false);
    void clear_osc_modulation(
        int scene, int entry); // clear the modulation routings on the algorithm-specific sliders
@@ -209,6 +212,7 @@ public:
 
    int current_category_id = 0;
    bool modsourceused[n_modsources];
+   bool modsourcebypassbyscene[2][n_modsources];
    bool midiprogramshavechanged = false;
 
    bool switch_toggled_queued, release_if_latched[2], release_anyway[2];

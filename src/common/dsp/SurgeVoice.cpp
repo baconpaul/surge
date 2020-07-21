@@ -445,6 +445,12 @@ int SurgeVoice::routefilter(int r)
 
 template <bool first> void SurgeVoice::calc_ctrldata(QuadFilterChainState* Q, int e)
 {
+   for( int i=0; i<n_modsources; ++i )
+   {
+      //if(  modsources[i] )
+      //modsources[i]->set_bypassed(synthesizer->modsourcebypassbyscene[scene][i]);
+   }
+   
    // Always process LFO1 so the gate retrigger always work
    lfo[0].process_block();
 

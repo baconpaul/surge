@@ -237,6 +237,11 @@ public:
    void queueRebuildUI() { queue_refresh = true; synth->refresh_editor = true; }
 
    std::string midiMappingToHtml();
+
+   /**
+    * LFO Bypass Functionality
+    */
+   void setModulationBypass( bool bypass, int msid );
    
 private:
    /**

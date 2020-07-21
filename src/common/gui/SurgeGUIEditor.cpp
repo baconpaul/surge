@@ -6521,3 +6521,18 @@ void SurgeGUIEditor::setupSkinFromEntry( const Surge::UI::SkinDB::Entry &entry )
    }
    reloadFromSkin();
 }
+
+void SurgeGUIEditor::setModulationBypass( bool bypass, int msid )
+{
+   CModulationSourceButton *cms = (CModulationSourceButton *)gui_modsrc[msid];
+
+   modsources thisms = (modsources)msid;
+   if( cms && cms->hasAlternate && cms->useAlternate )
+      thisms = (modsources)cms->alternateId;
+
+   std::cout << _D(cms) << _D(thisms) << _D(current_scene) << std::endl;
+   std::cout << _D(synth->storage.getPatch().scene[current_scene].modsources[thisms]) << std::endl;
+
+   synth->setModSourceBypass( current_scene, thisms, bypass );
+   
+}

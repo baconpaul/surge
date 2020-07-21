@@ -9,6 +9,7 @@
 #include <UserDefaults.h>
 #include <vt_dsp/basic_dsp.h>
 #include <iostream>
+#include "SurgeGUIEditor.h"
 
 using namespace VSTGUI;
 using namespace std;
@@ -287,7 +288,11 @@ void CModulationSourceButton::draw(CDrawContext* dc)
    modPowerRect.inset( 2, 2 );
    
    bypassButtonRect = modPowerRect;
-   dc->setFillColor( kRedCColor );
+   if( bypass )
+      dc->setFillColor( kRedCColor );
+   else
+      dc->setFillColor( kGreenCColor );
+
    dc->drawRect( modPowerRect, kDrawFilled );
 
    setDirty(false);
@@ -302,13 +307,23 @@ CMouseEventResult CModulationSourceButton::onMouseDown(CPoint& where, const CBut
 
    super::onMouseDown(where, buttons);
 
-   if( bypassButtonRect.pointInside(where)) {
-      std::cout << "IN BYPASS " << std::endl;
-   }
-
 
    if (!getMouseEnabled())
       return kMouseDownEventHandledButDontNeedMovedOrUpEvents;
+
+   
+   if( bypassButtonRect.pointInside(where)) {
+      std::cout << "IN BYPASS " << std::endl;
+      bypass = ! bypass;
+      invalid();
+
+      auto *sge = dynamic_cast<SurgeGUIEditor*>(listener);
+      if( sge )
+      {
+         sge->setModulationBypass( bypass, msid );
+      }
+      return kMouseDownEventHandledButDontNeedMovedOrUpEvents;
+   }
 
    CRect size = getViewSize();
    CPoint loc(where);
