@@ -1942,7 +1942,6 @@ void SurgeSynthesizer::prepareModsourceDoProcess(int scenemask)
          for (int i = 0; i < n_modsources; i++)
          {
             storage.getPatch().scene[scene].modsource_doprocess[i] = false;
-            storage.getPatch().scene[scene].modsource_bypass[i] = false;
          }
 
          for (int j = 0; j < 3; j++)
@@ -2523,7 +2522,7 @@ void SurgeSynthesizer::processControl()
             auto *routing = &storage.getPatch().scene[s].modulation_scene[i];
             int src_id = routing->source_id;
             if (storage.getPatch().scene[s].modsources[src_id] &&
-                ! storage.getPatch().scene[s].modsources[src_id]->get_bypassed() &&
+                ! storage.getPatch().scene[s].modsource_bypass[src_id] && 
                 ! routing->bypassed )
             {
                int dst_id = storage.getPatch().scene[s].modulation_scene[i].destination_id;
@@ -2547,9 +2546,11 @@ void SurgeSynthesizer::processControl()
       int dst_id = storage.getPatch().modulation_global[i].destination_id;
       float depth = storage.getPatch().modulation_global[i].depth;
       bool bypass = storage.getPatch().modulation_global[i].bypassed;
-      if( ! bypass && ! storage.getPatch().scene[0].modsources[src_id]->get_bypassed() )
+      if( ! bypass && ! storage.getPatch().scene[0].modsource_bypass[src_id] )
          storage.getPatch().globaldata[dst_id].f +=
             depth * storage.getPatch().scene[0].modsources[src_id]->output;
+      else
+         std::cout << "GLOBAL BYPASS " << _D(src_id) << std::endl;
    }
 
    if (switch_toggled_queued)
@@ -3002,8 +3003,6 @@ void SurgeSynthesizer::loadFromDawExtraState() {
 
 void SurgeSynthesizer::setModSourceBypass(int scene, modsources thisms, bool bypass )
 {
-   std::cout << "SetModsourceBypass " << scene << " " << thisms << " " << bypass << std::endl;
-   if( storage.getPatch().scene[scene].modsources[thisms] )
-      storage.getPatch().scene[scene].modsources[thisms]->set_bypassed( bypass );
+   std::cout << "SetModsourceBypass " << scene << " " << thisms << " " << bypass << " " << storage.getPatch().scene[scene].modsources[thisms] << std::endl;
    storage.getPatch().scene[scene].modsource_bypass[thisms] = bypass;
 }

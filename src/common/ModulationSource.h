@@ -214,10 +214,10 @@ public:
    {}
    float output;
 
-   inline bool get_bypassed() { return bypassed; }
-   inline void set_bypassed( bool da ) { bypassed = da; }
-private:
-   bool bypassed = false;
+   //inline bool get_bypassed() { return bypassed; }
+   //inline void set_bypassed( bool da ) { bypassed = da; }
+//private:
+   //bool bypassed = false;
 };
 
 class ControllerModulationSource : public ModulationSource
