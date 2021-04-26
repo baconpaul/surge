@@ -223,7 +223,7 @@ CMouseEventResult CPatchBrowser::onMouseDown(CPoint &where, const CButtonState &
             auto rString = res.getFullPathName().toStdString();
             auto sge = dynamic_cast<SurgeGUIEditor *>(listener);
             if (sge)
-                sge->queuePatchFileLoad(rString);
+                sge->synthClient->enqueuePatchFileLoad(rString);
         }
     });
     contextMenu->addEntry(loadF);

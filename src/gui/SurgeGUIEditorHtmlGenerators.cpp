@@ -14,7 +14,7 @@ void SurgeGUIEditor::showHTML(const std::string &html)
 {
     static struct filesToDelete : juce::DeletedAtShutdown
     {
-        ~filesToDelete()
+        ~filesToDelete() override
         {
             for (const auto &d : deleteThese)
             {
@@ -34,6 +34,8 @@ void SurgeGUIEditor::showHTML(const std::string &html)
 std::string SurgeGUIEditor::tuningToHtml()
 {
     std::ostringstream htmls;
+    auto currentScale = synthClient->getCurrentScale();
+    auto currentMapping = synthClient->getCurrentMapping();
 
     htmls <<
         R"HTML(
@@ -72,7 +74,7 @@ std::string SurgeGUIEditor::tuningToHtml()
         Surge Tuning Information
       </div>
       <div style="font-size: 12pt; font-family: Lato; padding: 2pt;">
-    )HTML" << synth->storage.currentScale.description
+    )HTML" << currentScale.description
           <<
         R"HTML(
       </div>
@@ -82,7 +84,7 @@ std::string SurgeGUIEditor::tuningToHtml()
       <div style="font-size: 12pt; margin-bottom: 10pt; font-family: Lato; color: #123463;">
          )HTML";
 
-    if (!synth->storage.isStandardMapping)
+    if (!synthClient->isStandardMapping())
     {
         htmls << "<ul>\n"
               << "<li><a href=\"#rawscl\">Raw Scala Tuning (.SCL)</a>\n"
@@ -109,12 +111,12 @@ std::string SurgeGUIEditor::tuningToHtml()
         <div style="padding-bottom: 10pt;">
     )HTML";
 
-    if (!synth->storage.isStandardMapping)
+    if (!synthClient->isStandardMapping())
     {
-        htmls << "Scale position 0 maps to MIDI note " << synth->storage.currentMapping.middleNote
+        htmls << "Scale position 0 maps to MIDI note " << currentMapping.middleNote
               << "\n</br>"
-              << "MIDI note " << synth->storage.currentMapping.tuningConstantNote
-              << " is set to a frequency of " << synth->storage.currentMapping.tuningFrequency
+              << "MIDI note " << currentMapping.tuningConstantNote
+              << " is set to a frequency of " << currentMapping.tuningFrequency
               << " Hz.\n</div> ";
     }
     else
@@ -122,7 +124,7 @@ std::string SurgeGUIEditor::tuningToHtml()
         htmls << "\nTuning uses standard keyboard mapping.\n</div>";
     }
 
-    htmls << synth->storage.currentScale.count << " tones\n</p>"
+    htmls << currentScale.count << " tones\n</p>"
           <<
         R"HTML(
     </div>
@@ -136,15 +138,15 @@ std::string SurgeGUIEditor::tuningToHtml()
     )HTML";
 
     int ct = 1;
-    float priorCents = 0;
-    for (auto &t : synth->storage.currentScale.tones)
+    auto priorCents = 0.0;
+    for (auto &t : currentScale.tones)
     {
         htmls << "<tr class=\"cnt\"><td> " << ct++ << "</td><td>";
         if (t.type == Tunings::Tone::kToneCents)
             htmls << t.cents;
         else
             htmls << t.ratio_n << " / " << t.ratio_d;
-        float interval = t.cents - priorCents;
+        auto interval = t.cents - priorCents;
         priorCents = t.cents;
         htmls << "</td><td>" << t.floatValue << "</td><td>" << t.cents << "</td><td>" << interval
               << "</td></tr>\n";
@@ -168,11 +170,11 @@ std::string SurgeGUIEditor::tuningToHtml()
     for (int i = 0; i < 128; ++i)
     {
         int oct_offset = 1;
-        oct_offset = Surge::Storage::getUserDefaultValue(&(this->synth->storage),
+        oct_offset = Surge::Storage::getUserDefaultValue(synthClient->getStorageInterface(),
                                                          Surge::Storage::MiddleC, 1);
         char notename[16];
 
-        std::string rowstyle = "";
+        std::string rowstyle;
         std::string tdopen = "<td colspan=2>";
         int np = i % 12;
         if (np == 1 || np == 3 || np == 6 || np == 8 || np == 10)
@@ -183,16 +185,16 @@ std::string SurgeGUIEditor::tuningToHtml()
         htmls << "<tr " << rowstyle << ">" << tdopen << i << " ("
               << get_notename(notename, i, oct_offset) << ")</td>\n";
 
-        auto tn = i - synth->storage.scaleConstantNote();
-        if (!synth->storage.isStandardMapping)
+        auto tn = i - synthClient->scaleConstantNote();
+        if (!synthClient->isStandardMapping())
         {
-            tn = i - synth->storage.currentMapping.middleNote;
+            tn = i - currentMapping.middleNote;
         }
         while (tn < 0)
-            tn += synth->storage.currentScale.count;
+            tn += currentScale.count;
 
-        auto p = synth->storage.note_to_pitch(i);
-        htmls << "<td class=\"cnt\">" << (tn % synth->storage.currentScale.count + 1)
+        auto p = synthClient->noteToPitch(i);
+        htmls << "<td class=\"cnt\">" << (tn % currentScale.count + 1)
               << "</td><td class=\"cnt\">" << 8.175798915 * p << " Hz</td>";
         htmls << "</tr>\n";
     }
@@ -208,21 +210,21 @@ std::string SurgeGUIEditor::tuningToHtml()
       <div style="font-size: 13pt; font-family: Lato; font-weight: 600; color: #123463;">
         <a name="rawscl">Tuning Raw File</a>:
            )HTML"
-          << synth->storage.currentScale.name << "</div></br>\n<pre>\n"
-          << synth->storage.currentScale.rawText << R"HTML(
+          << currentScale.name << "</div></br>\n<pre>\n"
+          << currentScale.rawText << R"HTML(
       </pre>
     </div>
 )HTML";
 
-    if (!synth->storage.isStandardMapping)
+    if (!synthClient->isStandardMapping())
     {
         htmls << R"HTML(
     <div style="margin:10pt; padding: 5pt; border: 1px solid #123463; background: #fafbff;">
       <div style="font-size: 13pt; font-family: Lato; font-weight: 600; color: #123463;">
         <a name="rawkbm">Keyboard Mapping Raw File</a>:
            )HTML"
-              << synth->storage.currentMapping.name << "</div></br>\n<pre>\n"
-              << synth->storage.currentMapping.rawText << R"HTML(
+              << currentMapping.name << "</div></br>\n<pre>\n"
+              << currentMapping.rawText << R"HTML(
       </pre>
     </div>
 )HTML";
@@ -234,16 +236,16 @@ std::string SurgeGUIEditor::tuningToHtml()
         <div style="font-size: 13pt; font-family: Lato; font-weight: 600; color: #123463;">
         <a name="matrices">Interval Matrices</a>:
            )HTML"
-          << synth->storage.currentScale.name << "</div></br>\n";
+          << currentScale.name << "</div></br>\n";
 
-    if (synth->storage.currentMapping.count > 48)
+    if (currentMapping.count > 48)
     {
         htmls << "Surge only displays inverval matrices for scales lower than 48 in length"
               << std::endl;
     }
     else
     {
-        int w = synth->storage.currentScale.count;
+        int w = currentScale.count;
         htmls << "<table><tr>";
         for (int i = 0; i <= w; ++i)
         {
@@ -252,15 +254,15 @@ std::string SurgeGUIEditor::tuningToHtml()
         htmls << "</tr></td>";
 
         // Do a trick of rotating by double filling cents so we don't have to index wrap
-        std::vector<float> cents;
-        float lastc = 0;
+        std::vector<double> cents;
+        double lastc = 0;
         cents.push_back(0);
-        for (auto &t : synth->storage.currentScale.tones)
+        for (auto &t : currentScale.tones)
         {
             cents.push_back(t.cents);
             lastc = t.cents;
         }
-        for (auto &t : synth->storage.currentScale.tones)
+        for (auto &t : currentScale.tones)
         {
             cents.push_back(t.cents + lastc);
         }
@@ -356,7 +358,7 @@ th {
     int n = n_global_params + n_scene_params;
     for (int i = 0; i < n; i++)
     {
-        if (synth->storage.getPatch().param_ptr[i]->midictrl >= 0)
+        if (synthClient->getParamProxy(i)->getMidiController() >= 0)
         {
             if (!foundOne)
             {
@@ -364,8 +366,8 @@ th {
                 htmls << "Individual parameter MIDI mappings<p>\n"
                       << "<table><tr><th>CC#</th><th>Parameter</th></tr>\n";
             }
-            htmls << "<tr><td class=\"center\">" << synth->storage.getPatch().param_ptr[i]->midictrl
-                  << "</td><td> " << synth->storage.getPatch().param_ptr[i]->get_full_name()
+            htmls << "<tr><td class=\"center\">" << synthClient->getParamProxy(i)->getMidiController()
+                  << "</td><td> " << synthClient->getParamProxy(i)->getFullName()
                   << "</td></tr>\n";
         }
     }
@@ -389,8 +391,8 @@ th {
      )HTML";
     for (int i = 0; i < n_customcontrollers; ++i)
     {
-        std::string name = synth->storage.getPatch().CustomControllerLabel[i];
-        auto ccval = synth->storage.controllers[i];
+        std::string name = synthClient->getControllerLabel(i);
+        auto ccval = synthClient->getControllerMIDIMapping(i);
 
         htmls << "<tr><td class=\"center\">" << (ccval == -1 ? "N/A" : std::to_string(ccval))
               << "</td><td class=\"center\">" << i + 1 << "</td><td>" << name << "</td></tr>"
@@ -411,7 +413,7 @@ std::string SurgeGUIEditor::skinInspectorHtml(SkinInspectorFlags f)
 {
     std::ostringstream htmls;
 
-    auto startSection = [&htmls](std::string secname, std::string seclabel) {
+    auto startSection = [&htmls](const std::string &secname, const std::string &seclabel) {
         htmls << R"HTML(
      <div style="margin:10pt; padding: 5pt; border: 1px solid #123463; background: #fafbff;">
                 <div style="font-size: 12pt; margin-bottom: 10pt; font-family: Lato; color: #123463;">
@@ -598,7 +600,7 @@ std::string SurgeGUIEditor::skinInspectorHtml(SkinInspectorFlags f)
                             int id = std::atoi(p.second.c_str());
                             // Linear search kinda sucks but this is debugging code for UI
                             // generation on small list
-                            for (auto q : imgid)
+                            for (const auto &q : imgid)
                                 if (q.second == id)
                                     htmls << " (" << q.first << ")\n";
                         }

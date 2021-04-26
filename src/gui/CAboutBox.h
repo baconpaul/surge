@@ -15,9 +15,11 @@
 
 #pragma once
 
+#include "efvg/escape_from_vstgui.h"
 #include "SkinSupport.h"
 
 class SurgeGUIEditor;
+class SurgeStorage;
 
 class CAboutBox : public VSTGUI::CViewContainer, public VSTGUI::IControlListener
 {

@@ -17,7 +17,7 @@
 
 #include "filesystem/import.h"
 #include <vector>
-class SurgeStorage;
+class SurgeStorageInterface;
 
 namespace Surge
 {
@@ -27,12 +27,12 @@ namespace ModulatorPreset
  * Given a storage, scene, and LFO, stream stream it to a file relative to the location
  * in the user directory LFO presets area
  */
-void savePresetToUser(const fs::path &location, SurgeStorage *s, int scene, int lfo);
+void savePresetToUser(const fs::path &location, SurgeStorageInterface *s, int scene, int lfo);
 
 /*
  * Given a compelted path, load the preset into our storage
  */
-void loadPresetFrom(const fs::path &location, SurgeStorage *s, int scene, int lfo);
+void loadPresetFrom(const fs::path &location, SurgeStorageInterface *s, int scene, int lfo);
 
 /*
  * What are the presets we have? In some form of category order
@@ -51,7 +51,7 @@ struct Category
     std::vector<Preset> presets;
 };
 
-std::vector<Category> getPresets(SurgeStorage *s);
+std::vector<Category> getPresets(SurgeStorageInterface *s);
 void forcePresetRescan();
 } // namespace ModulatorPreset
 } // namespace Surge

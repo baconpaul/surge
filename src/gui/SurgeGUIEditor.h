@@ -24,6 +24,7 @@
 #include "SurgeBitmaps.h"
 
 #include "SurgeSynthesizer.h"
+#include "SurgeSynthClient.h"
 
 #include "SkinSupport.h"
 #include "SkinColors.h"
@@ -53,7 +54,7 @@ class SurgeGUIEditor : public EditorType,
     using super = EditorType;
 
   public:
-    SurgeGUIEditor(PARENT_PLUGIN_TYPE *effect, SurgeSynthesizer *synth, void *userdata = nullptr);
+    SurgeGUIEditor(PARENT_PLUGIN_TYPE *effect,  std::unique_ptr<SurgeSynthClient> synthClient);
     virtual ~SurgeGUIEditor();
 
     std::atomic<int> errorItemCount{0};
@@ -84,9 +85,7 @@ class SurgeGUIEditor : public EditorType,
         enqueuePatchId = -1;
         if (t >= 0)
         {
-            synth->patchid_queue = t;
-            // Looks scary but remember this only runs if audio thread is off
-            synth->processThreadunsafeOperations();
+            synthClient->enqueuePatchLoad(t);
             patchCountdown = 200;
         }
     }
@@ -99,7 +98,6 @@ class SurgeGUIEditor : public EditorType,
                     VSTGUI::CFrame *frame) override; ///< should return 1 if no further key up
                                                      ///< processing should apply, otherwise -1
 
-    virtual void setParameter(long index, float value);
 
     // listener class
     void valueChanged(VSTGUI::CControl *control) override;
@@ -122,13 +120,15 @@ class SurgeGUIEditor : public EditorType,
     // adjust
     int current_scene = 0, current_osc[n_scenes] = {0, 0}, current_fx = 0;
 
+  public:
+    std::unique_ptr<SurgeSynthClient> synthClient;
+
   private:
     void openOrRecreateEditor();
     void makeStorePatchDialog();
     void close_editor();
     bool isControlVisible(ControlGroup controlGroup, int controlGroupEntry);
     void repushAutomationFor(Parameter *p);
-    SurgeSynthesizer *synth = nullptr;
     bool editor_open = false;
     bool mod_editor = false;
     modsources modsource = ms_lfo1, modsource_editor[n_scenes] = {ms_lfo1, ms_lfo1};
@@ -165,9 +165,9 @@ class SurgeGUIEditor : public EditorType,
     int patchCountdown = -1;
 
   public:
-    void populateDawExtraState(SurgeSynthesizer *synth)
+    void populateDawExtraState()
     {
-        auto des = &(synth->storage.getPatch().dawExtraState);
+        auto des = &(synthClient->getDawExtraState());
 
         des->isPopulated = true;
         des->editor.instanceZoomFactor = zoomFactor;
@@ -188,9 +188,9 @@ class SurgeGUIEditor : public EditorType,
         des->editor.isMSEGOpen = (editorOverlayTagAtClose == "msegEditor");
     }
 
-    void loadFromDAWExtraState(SurgeSynthesizer *synth)
+    void loadFromDAWExtraState()
     {
-        auto des = &(synth->storage.getPatch().dawExtraState);
+        auto des = &(synthClient->getDawExtraState());
         if (des->isPopulated)
         {
             auto sz = des->editor.instanceZoomFactor;
@@ -257,7 +257,7 @@ class SurgeGUIEditor : public EditorType,
     void queueRebuildUI()
     {
         queue_refresh = true;
-        synth->refresh_editor = true;
+        synthClient->refreshEditor();
     }
 
     std::string midiMappingToHtml();
@@ -318,12 +318,6 @@ class SurgeGUIEditor : public EditorType,
     }
 
     std::string getDisplayForTag(long tag);
-
-    void queuePatchFileLoad(std::string file)
-    {
-        strncpy(synth->patchid_file, file.c_str(), FILENAME_MAX);
-        synth->has_patchid_file = true;
-    }
 
     void closeStorePatchDialog();
     void showStorePatchDialog();
@@ -481,7 +475,6 @@ class SurgeGUIEditor : public EditorType,
     float blinktimer = 0;
     bool blinkstate = false;
     PARENT_PLUGIN_TYPE *_effect = nullptr;
-    void *_userdata = nullptr;
     int firstIdleCountdown = 0;
 
     /*

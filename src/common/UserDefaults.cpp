@@ -131,13 +131,13 @@ void initMaps()
 std::map<DefaultKey, UserDefaultValue> defaultsFileContents;
 bool haveReadDefaultsFile = false;
 
-std::string defaultsFileName(SurgeStorage *storage)
+std::string defaultsFileName(SurgeStorageInterface *storage)
 {
-    std::string fn = storage->userDefaultFilePath + PATH_SEPARATOR + "SurgeXTUserDefaults.xml";
+    std::string fn = storage->getUserDefaultFilePath() + PATH_SEPARATOR + "SurgeXTUserDefaults.xml";
     return fn;
 }
 
-void readDefaultsFile(std::string fn, bool forceRead, SurgeStorage *storage)
+void readDefaultsFile(std::string fn, bool forceRead, SurgeStorageInterface *storage)
 {
     if (!haveReadDefaultsFile || forceRead)
     {
@@ -189,7 +189,7 @@ void readDefaultsFile(std::string fn, bool forceRead, SurgeStorage *storage)
     }
 }
 
-bool storeUserDefaultValue(SurgeStorage *storage, const DefaultKey &key, const std::string &val,
+bool storeUserDefaultValue(SurgeStorageInterface *storage, const DefaultKey &key, const std::string &val,
                            UserDefaultValue::ValueType type)
 {
     // Re-read the file in case another surge has updated it
@@ -200,7 +200,7 @@ bool storeUserDefaultValue(SurgeStorage *storage, const DefaultKey &key, const s
     ** See SurgeSytnehsizer::savePatch for instance
     ** and so we have to do the same here
     */
-    fs::create_directories(string_to_path(storage->userDefaultFilePath));
+    fs::create_directories(string_to_path(storage->getUserDefaultFilePath()));
 
     UserDefaultValue v;
     v.key = key;
@@ -243,7 +243,7 @@ bool storeUserDefaultValue(SurgeStorage *storage, const DefaultKey &key, const s
 ** Functions from the header
 */
 
-std::string getUserDefaultValue(SurgeStorage *storage, const DefaultKey &key,
+std::string getUserDefaultValue(SurgeStorageInterface *storage, const DefaultKey &key,
                                 const std::string &valueIfMissing)
 {
     if (storage->userPrefOverrides.find(key) != storage->userPrefOverrides.end())
@@ -266,7 +266,7 @@ std::string getUserDefaultValue(SurgeStorage *storage, const DefaultKey &key,
     return valueIfMissing;
 }
 
-int getUserDefaultValue(SurgeStorage *storage, const DefaultKey &key, int valueIfMissing)
+int getUserDefaultValue(SurgeStorageInterface *storage, const DefaultKey &key, int valueIfMissing)
 {
     if (storage->userPrefOverrides.find(key) != storage->userPrefOverrides.end())
     {
@@ -287,12 +287,12 @@ int getUserDefaultValue(SurgeStorage *storage, const DefaultKey &key, int valueI
     return valueIfMissing;
 }
 
-bool updateUserDefaultValue(SurgeStorage *storage, const DefaultKey &key, const std::string &value)
+bool updateUserDefaultValue(SurgeStorageInterface *storage, const DefaultKey &key, const std::string &value)
 {
     return storeUserDefaultValue(storage, key, value, UserDefaultValue::ud_string);
 }
 
-bool updateUserDefaultValue(SurgeStorage *storage, const DefaultKey &key, const int value)
+bool updateUserDefaultValue(SurgeStorageInterface *storage, const DefaultKey &key, const int value)
 {
     std::ostringstream oss;
     oss << value;

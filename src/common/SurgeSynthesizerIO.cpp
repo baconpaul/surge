@@ -354,7 +354,7 @@ bool SurgeSynthesizer::loadPatchByPath(const char *fxpPath, int categoryId, cons
     /*
     ** Notify the host display that the patch name has changed
     */
-    updateDisplay();
+    refresh_editor = true;
     return true;
 }
 
@@ -418,7 +418,6 @@ void SurgeSynthesizer::loadRaw(const void *data, int size, bool preset)
     }
 
     halt_engine = false;
-    patch_loaded = true;
     refresh_editor = true;
 
     if (patchid < 0)

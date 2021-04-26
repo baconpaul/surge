@@ -861,7 +861,49 @@ class MTSClient;
 
 /* storage layer */
 
-class alignas(16) SurgeStorage
+/*
+ * SurgeStorageInterface is a thread-safe or read-only view on a SurgeStorage.
+ * I implemented it as SurgeStorage isa SurgeStorageInterface but if you dynamic
+ * cast up you are bad bad bad.
+ */
+class SurgeStorageInterface
+{
+  public:
+    virtual ~SurgeStorageInterface() = default;
+    struct ErrorListener
+    {
+        // This can be called from any thread. Beware. But it is called only
+        // when an error occurs so if you want to be sloppy and just lock thats OK
+        virtual void onSurgeError(const std::string &msg, const std::string &title) = 0;
+    };
+    virtual void reportError(const std::string &msg, const std::string &title) = 0;
+    virtual void addErrorListener(ErrorListener *l) = 0;
+    virtual void removeErrorListener(ErrorListener *l) = 0;
+
+    enum OkCancel
+    {
+        OK,
+        CANCEL
+    };
+    typedef std::function<OkCancel(const std::string &msg, const std::string &title, OkCancel def)> OkCancelProvider;
+    virtual void setOkCancelProvider( OkCancelProvider p ) = 0;
+    virtual void clearOkCancelProvider() = 0;
+
+    virtual const std::string &getDataPath() = 0;
+    virtual const std::string &getUserDataPath() = 0;
+    virtual const std::string &getUserDefaultFilePath() = 0;
+
+    /*
+     * Other users of surge may want to force clients to override user prefs.
+     * Really we just use this to force the FX bank to 2 decimals for now. But...
+     *
+     * It is a gross hack that this is on the interface. FIXME
+     */
+    std::unordered_map<Surge::Storage::DefaultKey, std::pair<int, std::string>> userPrefOverrides;
+
+};
+
+class alignas(16) SurgeStorage : public SurgeStorageInterface
 {
   public:
     float audio_in alignas(16)[2][BLOCK_SIZE_OS];
@@ -873,18 +915,13 @@ class alignas(16) SurgeStorage
     SurgeStorage(std::string suppliedDataPath = "");
 
     // With XT surgestorage can now keep a cache of errors it reports to the user
-    void reportError(const std::string &msg, const std::string &title);
-    struct ErrorListener
-    {
-        // This can be called from any thread. Beware. But it is called only
-        // when an error occurs so if you want to be sloppy and just lock thats OK
-        virtual void onSurgeError(const std::string &msg, const std::string &title) = 0;
-    };
+    void reportError(const std::string &msg, const std::string &title) override;
+
     std::unordered_set<ErrorListener *> errorListeners;
     std::mutex preListenerErrorMutex; // this mutex is ONLY locked in the error path and
     // when registering a listener (from the UI thread)
     std::vector<std::pair<std::string, std::string>> preListenerErrors;
-    void addErrorListener(ErrorListener *l)
+    void addErrorListener(ErrorListener *l) override
     {
         errorListeners.insert(l);
         std::lock_guard<std::mutex> g(preListenerErrorMutex);
@@ -892,18 +929,12 @@ class alignas(16) SurgeStorage
             l->onSurgeError(p.first, p.second);
         preListenerErrors.clear();
     }
-    void removeErrorListener(ErrorListener *l) { errorListeners.erase(l); }
+    void removeErrorListener(ErrorListener *l) override { errorListeners.erase(l); }
 
-    enum OkCancel
-    {
-        OK,
-        CANCEL
-    };
-
-    std::function<OkCancel(const std::string &msg, const std::string &title, OkCancel def)>
-        okCancelProvider =
+    OkCancelProvider okCancelProvider =
             [](const std::string &, const std::string &, OkCancel def) { return def; };
-    void clearOkCancelProvider()
+    void setOkCancelProvider(OkCancelProvider p) override { okCancelProvider = p; }
+    void clearOkCancelProvider() override
     {
         okCancelProvider = [](const std::string &, const std::string &, OkCancel def) {
             return def;
@@ -986,14 +1017,17 @@ class alignas(16) SurgeStorage
     std::vector<int> wtOrdering;
     std::vector<int> wtCategoryOrdering;
 
-    std::string wtpath;
     std::string datapath;
     std::string userDataPath;
     std::string userDefaultFilePath;
     std::string userFXPath;
     std::string installedPath;
-
     std::string userMidiMappingsPath;
+
+    const std::string &getDataPath() override { return datapath; }
+    const std::string &getUserDataPath() override { return userDataPath; }
+    const std::string &getUserDefaultFilePath() override { return userDefaultFilePath; }
+
     std::map<std::string, TiXmlDocument> userMidiMappingsXMLByName;
     void rescanUserMidiMappings();
     void loadMidiMappingByName(std::string name);
@@ -1185,12 +1219,6 @@ class alignas(16) SurgeStorage
         res += " @ " + std::to_string(k.tuningFrequency) + "Hz";
         return res;
     }
-
-    /*
-     * Other users of surge may want to force clients to override user prefs.
-     * Really we just use this to force the FX bank to 2 decimals for now. But...
-     */
-    std::unordered_map<Surge::Storage::DefaultKey, std::pair<int, std::string>> userPrefOverrides;
 
     ControllerModulationSource::SmoothingMode smoothingMode =
         ControllerModulationSource::SmoothingMode::LEGACY;

@@ -37,7 +37,7 @@
 ** to skin yourself, and answers various queries.
 */
 
-class SurgeStorage;
+class SurgeStorageInterface;
 class SurgeBitmaps;
 class CScalableBitmap;
 class TiXmlElement;
@@ -435,7 +435,7 @@ class SkinDB
         }
     };
 
-    void rescanForSkins(SurgeStorage *);
+    void rescanForSkins(SurgeStorageInterface *);
     const std::vector<Entry> &getAvailableSkins() const { return availableSkins; }
     Maybe<Entry> getEntryByRootAndName(const std::string &r, const std::string &n)
     {
@@ -447,7 +447,7 @@ class SkinDB
     const Entry &getDefaultSkinEntry() const { return defaultSkinEntry; }
 
     Skin::ptr_t getSkin(const Entry &skinEntry);
-    Skin::ptr_t defaultSkin(SurgeStorage *);
+    Skin::ptr_t defaultSkin(SurgeStorageInterface *);
 
     std::string getErrorString() { return errorStream.str(); };
     std::string getAndResetErrorString()

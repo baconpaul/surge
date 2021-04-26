@@ -64,6 +64,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
       # Apple Clang only
       add_compile_options(
         -fasm-blocks
+        -ferror-limit=200  # go big or go home.
       )
     endif()
   elseif(CMAKE_CXX_COMPILER_ID MATCHES "^GNU$")
@@ -247,7 +248,6 @@ set(SURGE_SHARED_SOURCES
   src/common/dsp/AliasOscillator.cpp
   src/common/dsp/AudioInputOscillator.cpp
   src/common/dsp/BiquadFilter.cpp
-  src/common/dsp/BiquadFilterSSE2.cpp
   src/common/dsp/ClassicOscillator.cpp
   src/common/dsp/DspUtilities.cpp
   src/common/dsp/FilterCoefficientMaker.cpp
@@ -298,6 +298,7 @@ set(SURGE_SYNTH_SOURCES
   src/common/SurgeSynthesizer.cpp
   src/common/SurgeSynthesizerIDManagement.cpp
   src/common/SurgeSynthesizerIO.cpp
+  src/common/SurgeSynthClient.cpp
   )
 
 set(SURGE_GENERATED_SOURCES

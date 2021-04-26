@@ -178,7 +178,6 @@ SurgeSynthesizer::SurgeSynthesizer(PluginLayer *parent, std::string suppliedData
 
     polydisplay = 0;
     refresh_editor = false;
-    patch_loaded = false;
     storage.getPatch().category = "Init";
     storage.getPatch().name = "Init";
     storage.getPatch().comment = "";
@@ -1329,12 +1328,6 @@ void SurgeSynthesizer::programChange(char channel, int value)
     patchid_queue = (CC0 << 7) + PCH;
 }
 
-void SurgeSynthesizer::updateDisplay()
-{
-    // This used to (in VST2) call updateDisplay but that did an Audio -> UI thread cross. Just mark
-    // the flag as true
-    refresh_editor = true;
-}
 
 void SurgeSynthesizer::sendParameterAutomation(long index, float value)
 {

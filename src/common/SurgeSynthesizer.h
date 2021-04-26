@@ -18,6 +18,7 @@
 #include "SurgeVoice.h"
 #include "effect/Effect.h"
 #include "BiquadFilter.h"
+#include "SurgeSynthClient.h"
 
 struct QuadFilterChainState;
 
@@ -26,11 +27,6 @@ struct QuadFilterChainState;
 #include <atomic>
 #include <cstdio>
 
-struct timedata
-{
-    double ppqPos, tempo;
-    int timeSigNumerator = 4, timeSigDenominator = 4;
-};
 
 struct parametermeta
 {
@@ -258,7 +254,6 @@ class alignas(16) SurgeSynthesizer
     //	unsigned int getParameterFlags (long index);
 
   public:
-    void updateDisplay();
     // bool setParameter (long index, float value);
     //	float getParameter (long index);
     bool isValidModulation(long ptag, modsources modsource);
@@ -301,7 +296,7 @@ class alignas(16) SurgeSynthesizer
     // synth -> editor variables
     std::atomic<int>
         polydisplay; // updated in audio thread, read from ui, so have assignments be atomic
-    bool refresh_editor, patch_loaded;
+    bool refresh_editor;
     int learn_param, learn_custom;
     int refresh_ctrl_queue[8];
     int refresh_parameter_queue[8];

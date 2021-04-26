@@ -48,7 +48,7 @@ class PatchDBSQLTableModel : public juce::TableListBoxModel
     void cellDoubleClicked(int rowNumber, int columnId, const juce::MouseEvent &event) override
     {
         auto d = data[rowNumber];
-        editor->queuePatchFileLoad(d.file);
+        editor->synthClient->enqueuePatchFileLoad(d.file);
         editor->closePatchBrowserDialog();
     }
     void executeQuery(const std::string &n) { data = storage->patchDB->rawQueryForNameLike(n); }

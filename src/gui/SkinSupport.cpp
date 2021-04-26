@@ -49,7 +49,7 @@ SkinDB::~SkinDB()
                    // std::cout << "Destroying SkinDB" << std::endl;
 }
 
-std::shared_ptr<Skin> SkinDB::defaultSkin(SurgeStorage *storage)
+std::shared_ptr<Skin> SkinDB::defaultSkin(SurgeStorageInterface *storage)
 {
     rescanForSkins(storage);
     auto uds = Surge::Storage::getUserDefaultValue(storage, Surge::Storage::DefaultSkin, "");
@@ -78,15 +78,15 @@ std::shared_ptr<Skin> SkinDB::getSkin(const Entry &skinEntry)
     return skins[skinEntry];
 }
 
-void SkinDB::rescanForSkins(SurgeStorage *storage)
+void SkinDB::rescanForSkins(SurgeStorageInterface *storage)
 {
 #ifdef INSTRUMENT_UI
     Surge::Debug::record("SkinDB::rescanForSkins");
 #endif
     availableSkins.clear();
 
-    std::array<fs::path, 2> paths = {string_to_path(storage->datapath),
-                                     string_to_path(storage->userDataPath)};
+    std::array<fs::path, 2> paths = {string_to_path(storage->getDataPath()),
+                                     string_to_path(storage->getUserDataPath())};
 
     for (auto &source : paths)
     {
@@ -166,8 +166,8 @@ void SkinDB::rescanForSkins(SurgeStorage *storage)
         std::ostringstream oss;
         oss << "Surge Classic skin was not located. This usually means Surge is incorrectly "
                "installed or uses an incompatible "
-            << "set of resources. Surge looked in '" << storage->datapath << "' and '"
-            << storage->userDataPath << "'. "
+            << "set of resources. Surge looked in '" << storage->getDataPath() << "' and '"
+            << storage->getUserDataPath() << "'. "
             << "Please reinstall Surge or remove incompatible resources.";
         storage->reportError(oss.str(), "Skin Loading Error");
     }

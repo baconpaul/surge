@@ -25,7 +25,7 @@ SurgeSynthEditor::SurgeSynthEditor(SurgeSynthProcessor &p)
     setSize(BASE_WINDOW_SIZE_X, BASE_WINDOW_SIZE_Y);
     setResizable(true, false); // For now
 
-    adapter = std::make_unique<SurgeGUIEditor>(this, processor.surge.get());
+    adapter = std::make_unique<SurgeGUIEditor>(this, std::make_unique<SurgeSynthClient>(processor.surge.get()));
     adapter->open(nullptr);
 
     idleTimer = std::make_unique<IdleTimer>(this);
@@ -67,13 +67,13 @@ void SurgeSynthEditor::IdleTimer::timerCallback()
 void SurgeSynthEditor::populateForStreaming(SurgeSynthesizer *s)
 {
     if (adapter)
-        adapter->populateDawExtraState(s);
+        adapter->populateDawExtraState();
 }
 
 void SurgeSynthEditor::populateFromStreaming(SurgeSynthesizer *s)
 {
     if (adapter)
-        adapter->loadFromDAWExtraState(s);
+        adapter->loadFromDAWExtraState();
 }
 
 bool SurgeSynthEditor::isInterestedInFileDrag(const juce::StringArray &files)

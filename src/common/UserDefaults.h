@@ -11,7 +11,7 @@
 ** persist this information.
 */
 
-class SurgeStorage;
+class SurgeStorageInterface;
 
 namespace Surge
 {
@@ -54,17 +54,17 @@ enum DefaultKey // streamed as strings so feel free to change the order to whate
  * If no such key is persisted, return the value "valueIfMissing". There is a variation
  * on this for both std::string and int stored values.
  */
-std::string getUserDefaultValue(SurgeStorage *storage, const DefaultKey &key,
+std::string getUserDefaultValue(SurgeStorageInterface *storage, const DefaultKey &key,
                                 const std::string &valueIfMissing);
-int getUserDefaultValue(SurgeStorage *storage, const DefaultKey &key, int valueIfMissing);
+int getUserDefaultValue(SurgeStorageInterface *storage, const DefaultKey &key, int valueIfMissing);
 
 /**
  * updateUserDefaultValue
  *
  * Given a key and a value, update the user default file
  */
-bool updateUserDefaultValue(SurgeStorage *storage, const DefaultKey &key, const std::string &value);
-bool updateUserDefaultValue(SurgeStorage *storage, const DefaultKey &key, const int value);
+bool updateUserDefaultValue(SurgeStorageInterface *storage, const DefaultKey &key, const std::string &value);
+bool updateUserDefaultValue(SurgeStorageInterface *storage, const DefaultKey &key, const int value);
 
 } // namespace Storage
 } // namespace Surge
