@@ -4201,9 +4201,9 @@ void SurgeGUIEditor::valueChanged(CControl *control)
         }
 
         if (control->getValue() > 0.5f)
-            synth->incrementCategory(true);
+            synthClient->incrementCategory(true);
         else
-            synth->incrementCategory(false);
+            synthClient->incrementCategory(false);
         return;
     }
     break;
@@ -4218,9 +4218,9 @@ void SurgeGUIEditor::valueChanged(CControl *control)
             synthClient->getStorageInterface(), Surge::Storage::PatchJogWraparound, 1);
 
         if (control->getValue() > 0.5f)
-            synth->incrementPatch(true, insideCategory);
+            synthClient->incrementPatch(true, insideCategory);
         else
-            synth->incrementPatch(false, insideCategory);
+            synthClient->incrementPatch(false, insideCategory);
         return;
     }
     break;
@@ -4519,7 +4519,7 @@ void SurgeGUIEditor::valueChanged(CControl *control)
                 }
                 else
                 {
-                    synth->setModulation(typeinEditTarget->id, (modsources)typeinModSource, mv);
+                    synthClient->setModulation(typeinEditTarget->id, (modsources)typeinModSource, mv);
                     synthClient->refreshEditor();
 
                     typeinDialog->setVisible(false);
@@ -4608,7 +4608,7 @@ void SurgeGUIEditor::valueChanged(CControl *control)
                     iw->Hide();
             }
 
-            if (modsource && mod_editor && synth->isValidModulation(p->id, modsource) &&
+            if (modsource && mod_editor && synthClient->isValidModulation(p->id, modsource) &&
                 dynamic_cast<CSurgeSlider *>(control) != nullptr)
             {
                 modsources thisms = modsource;
@@ -4626,7 +4626,7 @@ void SurgeGUIEditor::valueChanged(CControl *control)
                     // maybe setModValue here
                 }
 
-                synth->setModulation(ptag, thisms, mv);
+                synthClient->setModulation(ptag, thisms, mv);
                 ((CSurgeSlider *)control)->setModPresent(synthClient->isModDestUsed(p->id));
                 ((CSurgeSlider *)control)
                     ->setModCurrent(synthClient->isActiveModulation(p->id, thisms),

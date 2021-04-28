@@ -97,6 +97,7 @@ class SurgeSynthClient
     bool isModsourceUsed(modsources i) const;
     bool isModDestUsed(long i) const ;
     float getModulation(long, modsources) const;
+    void setModulation(long, modsources);
     void clearModulation(long ptag, modsources i);
 
     bool hasActiveFxAt(int slot) const; // synht->fx[slot] != nullptr
@@ -162,6 +163,12 @@ class SurgeSynthClient
     void getParameterName(int i, char *pname) const; // FIXME that signatur tho
     void getParameterDisplay(int i, char *pname) const;
     float getParameter01(int i) const;
+
+    /*
+     * Patch maangement
+     */
+    void incrementPatch(bool, bool); // just passthrough to synth
+    void incrementCategory(bool);
 
   private:
     SurgeSynthesizer *synth;
