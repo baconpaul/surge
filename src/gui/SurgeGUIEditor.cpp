@@ -1937,7 +1937,7 @@ int32_t SurgeGUIEditor::controlModifierClicked(CControl *control, CButtonState b
             if (synthClient->getClipboardType() == cp_osc)
             {
                 addCallbackMenu(contextMenu, "Paste", [this, a]() {
-                    synth->clear_osc_modulation(current_scene, a);
+                    synthClient->clearOscModulation(current_scene, a);
                     synthClient->clipboardPaste(cp_osc, current_scene, a);
                     queue_refresh = true;
                 });
@@ -3790,7 +3790,7 @@ int32_t SurgeGUIEditor::controlModifierClicked(CControl *control, CButtonState b
                     thisms = (modsources)cms->alternateId;
 
                 synthClient->clearModulation(ptag, thisms);
-                ((CSurgeSlider *)control)->setModValue(synth->getModulation(p->id, thisms));
+                ((CSurgeSlider *)control)->setModValue(synthClient->getModulation(p->id, thisms));
                 ((CSurgeSlider *)control)->setModPresent(synthClient->isModDestUsed(p->id));
                 ((CSurgeSlider *)control)
                     ->setModCurrent(synthClient->isActiveModulation(p->id, thisms),
@@ -4111,7 +4111,7 @@ void SurgeGUIEditor::valueChanged(CControl *control)
             a = 0;
         if (a < 0)
             a = nn - 1;
-        synthClient->getPatch().scene[current_scene].filterunit[idx].subtype.val.i = a;
+        synthClient->setParameterIntValue(&(synthClient->getPatch().scene[current_scene].filterunit[idx].subtype), a);
         synth->storage.subtypeMemory[current_scene][idx][t] = a;
         if (csc)
         {
@@ -4294,9 +4294,7 @@ void SurgeGUIEditor::valueChanged(CControl *control)
     break;
     case tag_fx_menu:
     {
-        synth->load_fx_needed = true;
-        // queue_refresh = true;
-        synth->fx_reload[current_fx & 7] = true;
+        synthClient->setLoadFxNeeded(current_fx);
         synthClient->processOperationsOnThisThreadIfAudioThreadIsNotRunning();
 
         CFxMenu *fxm = dynamic_cast<CFxMenu *>(fxmenu);
@@ -4606,7 +4604,7 @@ void SurgeGUIEditor::valueChanged(CControl *control)
                     synth->getParameterName(ptagid, txt);
                 sprintf(pname, "%s -> %s", modulatorName(thisms, true).c_str(), txt);
                 ModulationDisplayInfoWindowStrings mss;
-                p->get_display_of_modulation_depth(pdisp, synth->getModDepth(ptag, thisms),
+                p->get_display_of_modulation_depth(pdisp, synthClient->getModDepth(ptag, thisms),
                                                    synthClient->isBipolarModulation(thisms),
                                                    Parameter::InfoWindow, &mss);
                 if (mss.val != "")
@@ -4624,13 +4622,14 @@ void SurgeGUIEditor::valueChanged(CControl *control)
                 if (isCustomController(modsource))
                 {
                     int ccid = modsource - ms_ctrl1;
-                    char *lbl = synthClient->getPatch().CustomControllerLabel[ccid];
+                    std::string lbl = synthClient->getControllerLabel(ccid);
 
-                    if ((lbl[0] == '-') && !lbl[1])
+                    if (lbl == "-")
                     {
-                        strxcpy(lbl, p->get_name(), 15);
-                        synthClient->getPatch().CustomControllerLabel[ccid][15] = 0;
-                        ((CModulationSourceButton *)gui_modsrc[modsource])->setlabel(lbl);
+                        char res[16];
+                        strxcpy(res, p->get_name(), 15);
+                        synthClient->setControllerLabel(ccid, res);
+                        ((CModulationSourceButton *)gui_modsrc[modsource])->setlabel(res);
                         ((CModulationSourceButton *)gui_modsrc[modsource])->invalid();
                     }
                 }
@@ -4682,26 +4681,23 @@ void SurgeGUIEditor::valueChanged(CControl *control)
                 }
 
                 bool force_integer = frame->getCurrentMouseButtons() & kControl;
-                SurgeSynthesizer::ID ptagid;
-                synth->fromSynthSideId(ptag, ptagid);
-                if (synthClient->setParameter01(ptagid, val, false, force_integer))
+                if (synthClient->setParameter01(ptag, val, false, force_integer))
                 {
                     queue_refresh = true;
                     return;
                 }
                 else
                 {
-                    synth->sendParameterAutomation(ptagid, synth->getParameter01(ptagid));
+                    synthClient->sendParameterAutomation(ptag, synthClient->getParameter01(ptag));
 
                     if (dynamic_cast<CSurgeSlider *>(control) != nullptr)
                         ((CSurgeSlider *)control)->SetQuantitizedDispValue(p->get_value_f01());
                     else
                         control->invalid();
-                    synth->getParameterName(ptagid, pname);
-                    synth->getParameterDisplay(ptagid, pdisp);
-                    char pdispalt[256];
-                    synth->getParameterDisplayAlt(ptagid, pdispalt);
-                    ((CParameterTooltip *)infowindow)->setLabel(0, pdisp, pdispalt);
+                    auto nm = synthClient->getParameterName(ptag);
+                    auto ds = synthClient->getParameterDisplay(ptag);
+                    auto da = synthClient->getParameterDisplayAlt(ptag);
+                    ((CParameterTooltip *)infowindow)->setLabel(0, ds.c_str(), da.c_str());
                     ((CParameterTooltip *)infowindow)->clearMDIWS();
                     if (p->ctrltype == ct_polymode)
                         modulate = true;
@@ -5075,7 +5071,7 @@ void SurgeGUIEditor::scaleFileDropped(std::string fn)
 {
     try
     {
-        this->synth->storage.retuneToScale(Tunings::readSCLFile(fn));
+        this->syntClient->retuneToScale(Tunings::readSCLFile(fn));
         this->synthClient->refreshEditor();
     }
     catch (Tunings::TuningError &e)
@@ -5088,7 +5084,7 @@ void SurgeGUIEditor::mappingFileDropped(std::string fn)
 {
     try
     {
-        this->synth->storage.remapToKeyboard(Tunings::readKBMFile(fn));
+        this->synthClient->remapToKeyboard(Tunings::readKBMFile(fn));
         this->synthClient->refreshEditor();
     }
     catch (Tunings::TuningError &e)
@@ -5450,7 +5446,7 @@ VSTGUI::COptionMenu *SurgeGUIEditor::makeMpeMenu(VSTGUI::CRect &menuRect, bool s
                               Surge::Storage::updateUserDefaultValue(
                                   synthClient->getStorageInterface(), Surge::Storage::MPEPitchBendRange,
                                   newVal);
-                              this->synth->storage.mpePitchBendRange = newVal;
+                              this->synthClient->setMpePitchBendRange(newVal);
                           });
     });
 

@@ -47,15 +47,6 @@ struct timedata
 class SurgeSynthClient
 {
   public:
-    class ParameterProxy
-    {
-        friend class SurgeSynthClient;
-      private:
-        explicit ParameterProxy(int i);
-      public:
-        int getMidiController(); // paramptr[i]->midictrl
-        const char* getFullName(); // ptr->get_full_name()C
-    };
     explicit SurgeSynthClient(SurgeSynthesizer *s);
 
     bool isEngineHalted();
@@ -80,6 +71,8 @@ class SurgeSynthClient
     bool isStandardMapping() const;
     const Tunings::Scale &getCurrentScale() const;
     const Tunings::KeyboardMapping &getCurrentMapping() const;
+    void retuneToScale(const Tunings::Scale &s);
+    void remapToKeyboard(const Tunings::KeyboardMapping &m);
     bool hasODDSoundMTSClient() const; // synth->storage.oddsound_mts_client
     bool isODDSoundMTSActive() const; // synth->storage.oddsound_mts_active
 
@@ -109,6 +102,7 @@ class SurgeSynthClient
     float getModDepth(long, modsources) const; // what's the difference?
     void setModulation(long, modsources, float val);
     void clearModulation(long ptag, modsources i);
+    void clearOscModulation(int sc, int o); // synth->clear_osc_modulation(s,0);
 
     bool hasActiveFxAt(int slot) const; // synht->fx[slot] != nullptr
     float getFxVuLevel(int fxslot, int channel) const; // synth->fx[current_fx]->vu[(i << 1) + channel]
@@ -116,6 +110,8 @@ class SurgeSynthClient
     int getFxVuPos(int fxslot, int index) const; // synth->fx[slot]->vu_pos(i);
     const char* getFxGroupLabel(int fxslot, int index) const; // synth->fx[slot]->group_label(i);
     int getFxGroupLabelYPos(int fxslot, int index) const; // synth->fx[slot]->group_label_ypos(i);
+
+    bool setLoadFxNeeded(int fx); // synth->load_fx_needed = tru; synth->fx_reload[fx] = true;
 
     SurgeStorageInterface *getStorageInterface() const;
 
@@ -140,11 +136,6 @@ class SurgeSynthClient
      */
     DAWExtraStateStorage &getDawExtraState();
 
-    /*
-     * Params and Controllers
-     */
-    ParameterProxy *getParamProxy(int i);
-
 
     /*
      * Clipboard
@@ -164,6 +155,13 @@ class SurgeSynthClient
     void setControllerLabel(int c, const std::string &s);
     int getControllerMIDIMapping(int c) const;
     void setControllerMIDIMapping(int c, int midicc); // synth->storage.controllers[c] = midicc;
+
+    void getParameterMIDIMapping(int pid) const; // paramptr[i]->midictrl
+
+    const std::string getParameterFullName(int pid) const; // ptr->get_full_name()C
+    const std::string getParameterName(int pid) const; // make a tmp and copy in and return it
+    const std::string getParameterDisplay(int pid) const;
+    const std::string getParameterDisplayAlt(int pid) const;
 
     /*
      * The synth when it recieves automation events can force a reset of a parameter or control
@@ -188,11 +186,12 @@ class SurgeSynthClient
     void getParameterDisplay(int i, char *pname) const;
     float getParameter01(int i) const;
     int idForParameter(const Parameter *p) const; // return p->id
-    void setParameter01(int id, float, bool, bool );
-    void setParameter01(const Parameter *p, float f, bool a, bool b)
+    bool setParameter01(int id, float, bool, bool );
+    bool setParameter01(const Parameter *p, float f, bool a, bool b)
     {
-        setParameter01(idForParameter(p), f , a, b );
+        return setParameter01(idForParameter(p), f , a, b );
     }
+    void sendParameterAutomation(long tag, float value);
     void sendParameterAutomation(const Parameter *p); // synth->sendParameterAutomation(p->id, getParameter01(p->id));
     void setParameterIntValue(const Parameter *p, int value); // get the id look it up in the patch and whack val for now
     void setParameterBoolValue(const Parameter *p, bool value);

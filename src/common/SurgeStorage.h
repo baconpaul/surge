@@ -893,6 +893,8 @@ class SurgeStorageInterface
     virtual const std::string &getUserDataPath() = 0;
     virtual const std::string &getUserDefaultFilePath() = 0;
 
+    virtual const Surge::PatchStorage::PatchDB &getPatchDB() = 0;
+
     /*
      * Other users of surge may want to force clients to override user prefs.
      * Really we just use this to force the FX bank to 2 decimals for now. But...
@@ -955,6 +957,7 @@ class alignas(16) SurgeStorage : public SurgeStorageInterface
     ~SurgeStorage();
 
     std::unique_ptr<Surge::PatchStorage::PatchDB> patchDB;
+    const Surge::PatchStorage::PatchDB &getPatchDB() override { return *patchDB; }
     std::unique_ptr<SurgePatch> _patch;
 
     SurgePatch &getPatch();

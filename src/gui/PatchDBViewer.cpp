@@ -9,7 +9,7 @@
 class PatchDBSQLTableModel : public juce::TableListBoxModel
 {
   public:
-    PatchDBSQLTableModel(SurgeGUIEditor *ed, SurgeStorage *s) : editor(ed), storage(s) {}
+    PatchDBSQLTableModel(SurgeGUIEditor *ed, SurgeStorageInterface *s) : editor(ed), storage(s) {}
     int getNumRows() override { return data.size(); }
 
     void paintRowBackground(juce::Graphics &g, int rowNumber, int width, int height,
@@ -51,9 +51,9 @@ class PatchDBSQLTableModel : public juce::TableListBoxModel
         editor->synthClient->enqueuePatchFileLoad(d.file);
         editor->closePatchBrowserDialog();
     }
-    void executeQuery(const std::string &n) { data = storage->patchDB->rawQueryForNameLike(n); }
+    void executeQuery(const std::string &n) { data = storage->getPatchDB().rawQueryForNameLike(n); }
     std::vector<Surge::PatchStorage::PatchDB::record> data;
-    SurgeStorage *storage;
+    SurgeStorageInterface *storage;
     SurgeGUIEditor *editor;
 };
 

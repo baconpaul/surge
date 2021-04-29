@@ -312,7 +312,7 @@ void PatchDB::considerFXPForLoad(const fs::path &fxp, const std::string &name,
 }
 
 // FIXME - push to worker perhaps?
-std::vector<PatchDB::record> PatchDB::rawQueryForNameLike(const std::string &nameLikeThisP)
+std::vector<PatchDB::record> PatchDB::rawQueryForNameLike(const std::string &nameLikeThisP) const
 {
     std::vector<PatchDB::record> res;
 

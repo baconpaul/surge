@@ -56,7 +56,7 @@ struct PatchDB
                             const std::string &catName) const;
 
     // This is a temporary API point
-    std::vector<record> rawQueryForNameLike(const std::string &nameLikeThis);
+    std::vector<record> rawQueryForNameLike(const std::string &nameLikeThis) const;
 };
 
 } // namespace PatchStorage

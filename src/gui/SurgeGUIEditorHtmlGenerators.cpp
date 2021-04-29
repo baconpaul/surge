@@ -358,7 +358,7 @@ th {
     int n = n_global_params + n_scene_params;
     for (int i = 0; i < n; i++)
     {
-        if (synthClient->getParamProxy(i)->getMidiController() >= 0)
+        if (synthClient->getParameterMIDIMapping(i) >= 0)
         {
             if (!foundOne)
             {
@@ -366,8 +366,8 @@ th {
                 htmls << "Individual parameter MIDI mappings<p>\n"
                       << "<table><tr><th>CC#</th><th>Parameter</th></tr>\n";
             }
-            htmls << "<tr><td class=\"center\">" << synthClient->getParamProxy(i)->getMidiController()
-                  << "</td><td> " << synthClient->getParamProxy(i)->getFullName()
+            htmls << "<tr><td class=\"center\">" << synthClient->getParameterMIDIMapping(i)
+                  << "</td><td> " << synthClient->getParameterFullName(i)
                   << "</td></tr>\n";
         }
     }
