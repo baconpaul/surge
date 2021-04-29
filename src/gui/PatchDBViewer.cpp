@@ -57,7 +57,7 @@ class PatchDBSQLTableModel : public juce::TableListBoxModel
     SurgeGUIEditor *editor;
 };
 
-PatchDBViewer::PatchDBViewer(SurgeGUIEditor *e, SurgeStorage *s)
+PatchDBViewer::PatchDBViewer(SurgeGUIEditor *e, SurgeStorageInterface *s)
     : editor(e), storage(s), juce::Component("PatchDB Viewer")
 {
     createElements();

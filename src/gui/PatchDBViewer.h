@@ -14,7 +14,7 @@ class SurgeGUIEditor;
 class PatchDBViewer : public juce::Component, public juce::TextEditor::Listener
 {
   public:
-    PatchDBViewer(SurgeGUIEditor *ed, SurgeStorage *s);
+    PatchDBViewer(SurgeGUIEditor *ed, SurgeStorageInterface *s);
     ~PatchDBViewer();
     void createElements();
     void executeQuery();
@@ -24,7 +24,7 @@ class PatchDBViewer : public juce::Component, public juce::TextEditor::Listener
     std::unique_ptr<juce::TableListBox> table;
     std::unique_ptr<PatchDBSQLTableModel> tableModel;
 
-    SurgeStorage *storage;
+    SurgeStorageInterface *storage;
     SurgeGUIEditor *editor;
 };
 
