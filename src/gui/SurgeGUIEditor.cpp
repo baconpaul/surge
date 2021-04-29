@@ -1396,7 +1396,7 @@ void SurgeGUIEditor::openOrRecreateEditor()
         case Surge::Skin::Connector::NonParameterConnection::PATCH_BROWSER:
         {
             patchname =
-                new CPatchBrowser(skinCtrl->getRect(), this, tag_patchname, &synth->storage);
+                new CPatchBrowser(skinCtrl->getRect(), this, tag_patchname, synthClient->getStorageUnsafe());
             ((CPatchBrowser *)patchname)->setSkin(currentSkin, bitmapStore);
             ((CPatchBrowser *)patchname)->setLabel(synthClient->getPatch().name);
             ((CPatchBrowser *)patchname)->setCategory(synthClient->getPatch().category);
@@ -2679,12 +2679,9 @@ int32_t SurgeGUIEditor::controlModifierClicked(CControl *control, CButtonState b
             {
                 // FIXME - make this a checked toggle
                 auto b = addCallbackMenu(contextMenu, txt2, [this, p, control]() {
-                    if (synthClient->isValidSynthSideID(p->id, pid))
-                    {
-                        synthClient->setParameter01(synthClient->idForParameter(p), !p->val.b, false, false);
-                        repushAutomationFor(p);
-                        synthClient->refreshEditor();
-                    }
+                    synthClient->setParameter01(p, !p->val.b, false, false);
+                    repushAutomationFor(p);
+                    synthClient->refreshEditor();
                 });
 
                 eid++;
@@ -2696,7 +2693,7 @@ int32_t SurgeGUIEditor::controlModifierClicked(CControl *control, CButtonState b
 
                 if (p->ctrltype == ct_bool_keytrack || p->ctrltype == ct_bool_retrigger)
                 {
-                    std::vector<Parameter *> impactedParms;
+                    std::vector<const Parameter *> impactedParms;
                     std::vector<std::string> tgltxt = {"Enable", "Disable"};
                     std::string parname = "Keytrack";
                     if (p->ctrltype == ct_bool_retrigger)
@@ -2726,13 +2723,8 @@ int32_t SurgeGUIEditor::controlModifierClicked(CControl *control, CButtonState b
                         addCallbackMenu(contextMenu, txt3.c_str(), [this, ktsw, impactedParms]() {
                             for (auto *p : impactedParms)
                             {
-                                SurgeSynthesizer::ID pid;
-
-                                if (synth->fromSynthSideId(p->id, pid))
-                                {
-                                    synthClient->setParameter01(pid, 1 - ktsw, false, false);
-                                    repushAutomationFor(p);
-                                }
+                                synthClient->setParameter01(p, 1 - ktsw, false, false);
+                                repushAutomationFor(p);
                             }
 
                             synthClient->refreshEditor();
@@ -3435,7 +3427,7 @@ int32_t SurgeGUIEditor::controlModifierClicked(CControl *control, CButtonState b
                 midiSub->forget();
                 eid++;
 
-                if (synth->learn_param > -1 && synth->learn_param == p->id)
+                if (synthClient->getLearnParam() > -1 && synthClient->getLearnParam() == p->id)
                     cancellearn = true;
 
                 std::string learnTag =
@@ -3445,12 +3437,12 @@ int32_t SurgeGUIEditor::controlModifierClicked(CControl *control, CButtonState b
                                     if (cancellearn)
                                     {
                                         hideMidiLearnOverlay();
-                                        synth->learn_param = -1;
+                                        synthClient->setLearnParam(-1);
                                     }
                                     else
                                     {
                                         showMidiLearnOverlay(control->getViewSize());
-                                        synth->learn_param = p->id;
+                                        synthClient->setLearnParam(p->id);
                                     }
                                 });
                 eid++;
@@ -3513,7 +3505,7 @@ int32_t SurgeGUIEditor::controlModifierClicked(CControl *control, CButtonState b
                         modsources ms = (modsources)modsource_display_order[k];
 
                         if (!synthClient->isActiveModulation(ptag, ms) &&
-                            synth->isValidModulation(ptag, ms))
+                            synthClient->isValidModulation(ptag, ms))
                         {
                             char tmptxt[512];
                             sprintf(tmptxt, "%s", modulatorName(ms, false).c_str());
@@ -3670,7 +3662,7 @@ int32_t SurgeGUIEditor::controlModifierClicked(CControl *control, CButtonState b
                         if (synthClient->isActiveModulation(ptag, ms))
                         {
                             char modtxt[256];
-                            p->get_display_of_modulation_depth(modtxt, synth->getModDepth(ptag, ms),
+                            p->get_display_of_modulation_depth(modtxt, synthClient->getModDepth(ptag, ms),
                                                                synthClient->isBipolarModulation(ms),
                                                                Parameter::Menu);
 
@@ -3790,7 +3782,7 @@ int32_t SurgeGUIEditor::controlModifierClicked(CControl *control, CButtonState b
         // reset to default value
         else if (button & kDoubleClick)
         {
-            if (synth->isValidModulation(ptag, modsource) && mod_editor)
+            if (synthClient->isValidModulation(ptag, modsource) && mod_editor)
             {
                 CModulationSourceButton *cms = (CModulationSourceButton *)gui_modsrc[modsource];
                 auto thisms = modsource;
@@ -3856,17 +3848,17 @@ int32_t SurgeGUIEditor::controlModifierClicked(CControl *control, CButtonState b
         {
             if (p->ctrltype == ct_bool_mute)
             {
-                Parameter *o1 = &(synthClient->getPatch().scene[current_scene].mute_o1);
-                Parameter *r23 = &(synthClient->getPatch().scene[current_scene].mute_ring_23);
+                const auto *o1 = &(synthClient->getPatch().scene[current_scene].mute_o1);
+                const auto *r23 = &(synthClient->getPatch().scene[current_scene].mute_ring_23);
 
                 auto curr = o1;
 
                 while (curr <= r23)
                 {
                     if (curr->id == p->id)
-                        curr->val.b = true;
+                        synthClient->setParameterBoolValue(curr, true);
                     else
-                        curr->val.b = false;
+                        synthClient->setParameterBoolValue(curr, false);
 
                     curr++;
                 }
@@ -3875,17 +3867,17 @@ int32_t SurgeGUIEditor::controlModifierClicked(CControl *control, CButtonState b
             }
             else if (p->ctrltype == ct_bool_solo)
             {
-                Parameter *o1 = &(synthClient->getPatch().scene[current_scene].solo_o1);
-                Parameter *r23 = &(synthClient->getPatch().scene[current_scene].solo_ring_23);
+                const auto *o1 = &(synthClient->getPatch().scene[current_scene].solo_o1);
+                const auto *r23 = &(synthClient->getPatch().scene[current_scene].solo_ring_23);
 
                 auto curr = o1;
 
                 while (curr <= r23)
                 {
                     if (curr->id == p->id)
-                        curr->val.b = true;
+                        synthClient->setParameterBoolValue(curr, true);
                     else
-                        curr->val.b = false;
+                        synthClient->setParameterBoolValue(curr, false);
 
                     curr++;
                 }
@@ -4139,7 +4131,7 @@ void SurgeGUIEditor::valueChanged(CControl *control)
     {
         current_scene = (int)(control->getValue() * 1.f) + 0.5f;
         synth->release_if_latched[synthClient->getPatch().scene_active.val.i] = true;
-        synthClient->getPatch().scene_active.val.i = current_scene;
+        synthClient->setParameterIntValue( &(synthClient->getPatch().scene_active), current_scene );
         // synthClient->getPatch().param_ptr[scene_select_pid]->set_value_f01(control->getValue());
 
         if (isAnyOverlayPresent(MSEG_EDITOR))
@@ -4296,7 +4288,7 @@ void SurgeGUIEditor::valueChanged(CControl *control)
     {
         synth->switch_toggled_queued = true;
         queue_refresh = true;
-        synth->processThreadunsafeOperations();
+        synthClient->processOperationsOnThisThreadIfAudioThreadIsNotRunning();
         return;
     }
     break;
@@ -4305,7 +4297,7 @@ void SurgeGUIEditor::valueChanged(CControl *control)
         synth->load_fx_needed = true;
         // queue_refresh = true;
         synth->fx_reload[current_fx & 7] = true;
-        synth->processThreadunsafeOperations();
+        synthClient->processOperationsOnThisThreadIfAudioThreadIsNotRunning();
 
         CFxMenu *fxm = dynamic_cast<CFxMenu *>(fxmenu);
         if (fxm && fxm->selectedIdx >= 0)
@@ -5433,15 +5425,15 @@ VSTGUI::COptionMenu *SurgeGUIEditor::makeMpeMenu(VSTGUI::CRect &menuRect, bool s
     mpeSubMenu->addSeparator();
 
     std::ostringstream oss;
-    oss << "Change MPE Pitch Bend Range (Current: " << synth->storage.mpePitchBendRange
+    oss << "Change MPE Pitch Bend Range (Current: " << synthClient->getMpePitchBendRange()
         << " Semitones)";
     addCallbackMenu(mpeSubMenu, Surge::UI::toOSCaseForMenu(oss.str().c_str()), [this, menuRect]() {
         // FIXME! This won't work on linux
-        const auto c{std::to_string(int(synth->storage.mpePitchBendRange))};
+        const auto c{std::to_string(int(synthClient->getMpePitchBendRange()))};
         promptForMiniEdit(c, "Enter new MPE pitch bend range:", "MPE Pitch Bend Range",
                           menuRect.getTopLeft(), [this](const std::string &c) {
                               int newVal = ::atoi(c.c_str());
-                              this->synth->storage.mpePitchBendRange = newVal;
+                              this->synthClient->setMpePitchBendRange( newVal );
                           });
     });
 
@@ -7396,7 +7388,7 @@ void SurgeGUIEditor::openModTypeinOnDrop(int modt, CControl *sl, int slidertag)
     auto p = synthClient->getPatch().param_ptr[slidertag - start_paramtags];
     int ms = modt - tag_mod_source0;
 
-    if (synth->isValidModulation(p->id, (modsources)ms))
+    if (synthClient->isValidModulation(p->id, (modsources)ms))
         promptForUserValueEntry(p, sl, ms);
 }
 
@@ -7637,7 +7629,7 @@ SurgeGUIEditor::layoutComponentForSkin(std::shared_ptr<Surge::UI::Skin::Control>
         {
             p->ctrlstyle = p->ctrlstyle & ~kNoPopup;
         }
-        bool is_mod = p && synth->isValidModulation(p->id, modsource);
+        bool is_mod = p && synthClient->isValidModulation(p->id, modsource);
 
         auto hs = new CSurgeSlider(loc, style, this, tag, is_mod, bitmapStore, synthClient->getStorageInterface());
         hs->setSkin(currentSkin, bitmapStore, skinCtrl);
@@ -7701,7 +7693,7 @@ SurgeGUIEditor::layoutComponentForSkin(std::shared_ptr<Surge::UI::Skin::Control>
 
         setDisabledForParameter(p, hs);
 
-        if (synth->isValidModulation(p->id, modsource))
+        if (synthClient->isValidModulation(p->id, modsource))
         {
             hs->setModMode(mod_editor ? 1 : 0);
             hs->setModValue(synth->getModulation(p->id, modsource));
@@ -8264,10 +8256,9 @@ void SurgeGUIEditor::showMSEGEditor()
     }
 }
 
-void SurgeGUIEditor::repushAutomationFor(Parameter *p)
+void SurgeGUIEditor::repushAutomationFor(const Parameter *p)
 {
-    auto id = synthClient->idForParameter(p);
-    synth->sendParameterAutomation(id, synth->getParameter01(id));
+    synthClient->sendParameterAutomation(p)
 }
 
 void SurgeGUIEditor::showAboutBox(int devModeGrid)

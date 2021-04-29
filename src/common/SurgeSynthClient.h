@@ -85,6 +85,8 @@ class SurgeSynthClient
 
     bool isMpeEnabled() const; // return synth->mpeEnabled;
     void setMpeEnabled(bool toThis);
+    float getMpePitchBendRange() const;
+    void setMpePitchBendRange(float f);
 
     const timedata& getTimeData() const;
 
@@ -99,12 +101,13 @@ class SurgeSynthClient
     void setLearnCustom( int p);
 
     bool isActiveModulation(long ptag, modsources i) const;
+    bool isValidModulation(long ptag, modsources i) const;
     bool isBipolarModulation(modsources i) const;
     bool isModsourceUsed(modsources i) const;
     bool isModDestUsed(long i) const ;
     float getModulation(long, modsources) const;
     float getModDepth(long, modsources) const; // what's the difference?
-    void setModulation(long, modsources);
+    void setModulation(long, modsources, float val);
     void clearModulation(long ptag, modsources i);
 
     bool hasActiveFxAt(int slot) const; // synht->fx[slot] != nullptr
@@ -186,6 +189,13 @@ class SurgeSynthClient
     float getParameter01(int i) const;
     int idForParameter(const Parameter *p) const; // return p->id
     void setParameter01(int id, float, bool, bool );
+    void setParameter01(const Parameter *p, float f, bool a, bool b)
+    {
+        setParameter01(idForParameter(p), f , a, b );
+    }
+    void sendParameterAutomation(const Parameter *p); // synth->sendParameterAutomation(p->id, getParameter01(p->id));
+    void setParameterIntValue(const Parameter *p, int value); // get the id look it up in the patch and whack val for now
+    void setParameterBoolValue(const Parameter *p, bool value);
 
     /*
      * Patch maangement
@@ -198,6 +208,8 @@ class SurgeSynthClient
 
     void setHardclipMode(SurgeStorage::HardClipMode m, int scene = -1); // global at -1
     SurgeStorage::HardClipMode getHardclipMode(int scene = -1) const;
+
+    void processOperationsOnThisThreadIfAudioThreadIsNotRunning(); // better name for process thread unsafe ops
 
   private:
     SurgeSynthesizer *synth;

@@ -128,7 +128,7 @@ class SurgeGUIEditor : public EditorType,
     void makeStorePatchDialog();
     void close_editor();
     bool isControlVisible(ControlGroup controlGroup, int controlGroupEntry);
-    void repushAutomationFor(Parameter *p);
+    void repushAutomationFor(const Parameter *p);
     bool editor_open = false;
     bool mod_editor = false;
     modsources modsource = ms_lfo1, modsource_editor[n_scenes] = {ms_lfo1, ms_lfo1};
