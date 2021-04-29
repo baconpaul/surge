@@ -81,12 +81,12 @@ int SurgeSynthClient::scaleConstantNote() const
     return synth->storage.scaleConstantNote();
 }
 
-std::string SurgeSynthClient::getControllerLabel(int c)
+std::string SurgeSynthClient::getControllerLabel(int c) const
 {
     return synth->storage.getPatch().CustomControllerLabel[c];
 }
 
-int SurgeSynthClient::getControllerMIDIMapping(int c)
+int SurgeSynthClient::getControllerMIDIMapping(int c) const
 {
     return synth->storage.controllers[c];
 }

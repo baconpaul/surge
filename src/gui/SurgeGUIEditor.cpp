@@ -444,18 +444,14 @@ void SurgeGUIEditor::idle()
             }
         }
 
-        WARN_NOT_YET("ODDSOUND MTS SUPPORT");
         if (statusTune)
         {
             auto mv = statusTune->getValue();
             if ((mv < 0.5 && !synthClient->isStandardTuning()) ||
                 (mv > 0.5 && synthClient->isStandardTuning()))
             {
-#if 0
                 bool hasmts =
-                    synth->storage.oddsound_mts_client && synth->storage.oddsound_mts_active;
-#endif
-                bool hasmts = false;
+                    synthClient->hasODDSoundMTSClient() && synthClient->isODDSoundMTSActive();
                 statusTune->setValue(!synthClient->isStandardTuning() || hasmts);
                 statusTune->invalid();
             }
@@ -1220,13 +1216,13 @@ void SurgeGUIEditor::openOrRecreateEditor()
         {
             auto fxpp = currentSkin->getOrCreateControlForConnector("fx.param.panel");
             CRect fxRect = CRect(CPoint(fxpp->x, fxpp->y), CPoint(123, 13));
-            for (int i = 0; i < 15; i++)
+            for (int i = 0; i < 15 /* why 15 */; i++)
             {
-                int t = synth->fx[current_fx]->vu_type(i);
+                int t = synthClient->getFxVuType(current_fx, i);
                 if (t)
                 {
                     CRect vr(fxRect); // FIXME (vurect);
-                    vr.offset(6, yofs * synth->fx[current_fx]->vu_ypos(i));
+                    vr.offset(6, yofs * synthClient->getFxVuPos(current_fx, i));
                     vr.offset(0, -14);
                     vu[i + 1] = new CSurgeVuMeter(vr, this);
                     ((CSurgeVuMeter *)vu[i + 1])->setSkin(currentSkin, bitmapStore);
@@ -1238,7 +1234,7 @@ void SurgeGUIEditor::openOrRecreateEditor()
                     vu[i + 1] = nullptr;
                 }
 
-                const char *label = synth->fx[current_fx]->group_label(i);
+                const char *label = synthClient->getFxGroupLabel(current_fx, i);
 
                 if (label)
                 {
@@ -1246,7 +1242,7 @@ void SurgeGUIEditor::openOrRecreateEditor()
                     vr.top += 1;
                     vr.right += 5;
                     vr.offset(5, -12);
-                    vr.offset(0, yofs * synth->fx[current_fx]->group_label_ypos(i));
+                    vr.offset(0, yofs * synthClient->getFxGroupLabelYPos(current_fx,i));
                     CEffectLabel *lb = new CEffectLabel(vr);
                     lb->setLabel(label);
                     lb->setSkin(currentSkin, bitmapStore);
@@ -1333,7 +1329,7 @@ void SurgeGUIEditor::openOrRecreateEditor()
         {
             // FIXME - drag and drop onto this?
             statusTune = layoutComponentForSkin(skinCtrl, tag_status_tune);
-            auto hasmts = synth->storage.oddsound_mts_client && synth->storage.oddsound_mts_active;
+            auto hasmts = synthClient->hasODDSoundMTSClient() && synthClient->isODDSoundMTSActive();
             statusTune->setValue(synthClient->isStandardTuning() ? hasmts : 1);
 
             auto csc = dynamic_cast<CSwitchControl *>(statusTune);
@@ -1404,7 +1400,7 @@ void SurgeGUIEditor::openOrRecreateEditor()
             ((CPatchBrowser *)patchname)->setSkin(currentSkin, bitmapStore);
             ((CPatchBrowser *)patchname)->setLabel(synthClient->getPatch().name);
             ((CPatchBrowser *)patchname)->setCategory(synthClient->getPatch().category);
-            ((CPatchBrowser *)patchname)->setIDs(synth->current_category_id, synth->patchid);
+            ((CPatchBrowser *)patchname)->setIDs(synthClient->getPatchCategoryId(), synthClient->getPatchId());
             ((CPatchBrowser *)patchname)->setAuthor(synthClient->getPatch().author);
             frame->addView(patchname);
             break;
@@ -1495,7 +1491,7 @@ void SurgeGUIEditor::openOrRecreateEditor()
                                        style | conn.payload->controlStyleFlags);
 
                 uiidToSliderLabel[p->ui_identifier] = p->get_name();
-                if (p->id == synth->learn_param)
+                if (p->id == synthClient->getLearnParam())
                 {
                     showMidiLearnOverlay(param[p->id]->getViewSize());
                 }
@@ -1734,18 +1730,6 @@ void SurgeGUIEditor::close_editor()
 
 bool SurgeGUIEditor::open(void *parent)
 {
-    if (samplerate == 0)
-    {
-        std::cout << "Sample rate was not set when editor opened. Defaulting to 44.1k" << std::endl;
-
-        /*
-        ** The oscillator displays need a sample rate; some test hosts don't call
-        ** setSampleRate so if we are in this state make the bad but reasonable
-        ** default choice
-        */
-        synth->setSamplerate(44100);
-    }
-
     super::open(parent);
 
     int platformType = 0;
@@ -1941,20 +1925,20 @@ int32_t SurgeGUIEditor::controlModifierClicked(CControl *control, CButtonState b
 
             contextMenu->addSeparator(eid++);
             addCallbackMenu(contextMenu, "Copy", [this, a]() {
-                synth->storage.clipboard_copy(cp_osc, current_scene, a);
+                synthClient->clipboardCopy(cp_osc, current_scene, a);
             });
             eid++;
 
             addCallbackMenu(
                 contextMenu, Surge::UI::toOSCaseForMenu("Copy With Modulation"),
-                [this, a]() { synth->storage.clipboard_copy(cp_oscmod, current_scene, a); });
+                [this, a]() { synthClient->clipboardCopy(cp_oscmod, current_scene, a); });
             eid++;
 
-            if (synth->storage.get_clipboard_type() == cp_osc)
+            if (synthClient->getClipboardType() == cp_osc)
             {
                 addCallbackMenu(contextMenu, "Paste", [this, a]() {
                     synth->clear_osc_modulation(current_scene, a);
-                    synth->storage.clipboard_paste(cp_osc, current_scene, a);
+                    synthClient->clipboardPaste(cp_osc, current_scene, a);
                     queue_refresh = true;
                 });
                 eid++;
@@ -2007,11 +1991,11 @@ int32_t SurgeGUIEditor::controlModifierClicked(CControl *control, CButtonState b
             }
             contextMenu.addSeparator();
             contextMenu.addItem("Copy",
-                                [this, a]() { synth->storage.clipboard_copy(cp_scene, a, -1); });
+                                [this, a]() { synthClient->clipboardCopy(cp_scene, a, -1); });
             contextMenu.addItem("Paste",
-                                synth->storage.get_clipboard_type() == cp_scene, // enabled
+                                synthClient->getClipboardType() == cp_scene, // enabled
                                 false, [this, a]() {
-                                    synth->storage.clipboard_paste(cp_scene, a, -1);
+                                    synthClient->clipboardPaste(cp_scene, a, -1);
                                     queue_refresh = true;
                                 });
 
@@ -2247,12 +2231,10 @@ int32_t SurgeGUIEditor::controlModifierClicked(CControl *control, CButtonState b
                             if (resetName)
                             {
                                 // And this is where we apply the name refresh, of course.
-                                strxcpy(synthClient->getPatch().CustomControllerLabel[ccid],
-                                        newName.c_str(), 15);
-                                synthClient->getPatch().CustomControllerLabel[ccid][15] = 0;
+                                synthClient->setControllerLabel(ccid, newName);
                                 ((CModulationSourceButton *)control)
                                     ->setlabel(
-                                        synthClient->getPatch().CustomControllerLabel[ccid]);
+                                        synthClient->getControllerLabel(ccid).c_str());
                                 control->setDirty();
                                 control->invalid();
                                 synthClient->refreshEditor();
@@ -2292,10 +2274,9 @@ int32_t SurgeGUIEditor::controlModifierClicked(CControl *control, CButtonState b
                         {
                             int ccid = thisms - ms_ctrl1;
 
-                            synthClient->getPatch().CustomControllerLabel[ccid][0] = '-';
-                            synthClient->getPatch().CustomControllerLabel[ccid][1] = 0;
+                            synthClient->setControllerLabel(ccid, "-");
                             ((CModulationSourceButton *)control)
-                                ->setlabel(synthClient->getPatch().CustomControllerLabel[ccid]);
+                                ->setlabel(synthClient->getControllerLabel(ccid).c_str());
                         }
                         control->setDirty(true);
                         control->invalid();
@@ -2382,13 +2363,13 @@ int32_t SurgeGUIEditor::controlModifierClicked(CControl *control, CButtonState b
                         auto cmd = std::make_shared<CCommandMenuItem>(CCommandMenuItem::Desc(name));
 
                         cmd->setActions([this, ccid, mc](CCommandMenuItem *men) {
-                            synth->storage.controllers[ccid] = mc;
+                            synthClient->setControllerMIDIMapping(ccid, mc);
                         });
 
                         auto added = currentSub->addEntry(cmd);
                         added->setEnabled(!disabled);
 
-                        if (synth->storage.controllers[ccid] == mc)
+                        if (synthClient->getControllerMIDIMapping(ccid) == mc)
                         {
                             added->setChecked();
                             isChecked = true;
@@ -2433,15 +2414,15 @@ int32_t SurgeGUIEditor::controlModifierClicked(CControl *control, CButtonState b
                                 });
                 eid++;
 
-                if (synth->storage.controllers[ccid] >= 0)
+                if (synthClient->getControllerMIDIMapping(ccid) >= 0)
                 {
                     char txt4[16];
-                    decode_controllerid(txt4, synth->storage.controllers[ccid]);
+                    decode_controllerid(txt4, synthClient->getControllerMIDIMapping(ccid));
                     snprintf(txt, TXT_SIZE, "Clear Learned MIDI (%s ", txt4);
                     addCallbackMenu(contextMenu,
                                     Surge::UI::toOSCaseForMenu(txt) +
-                                        midicc_names[synth->storage.controllers[ccid]] + ")",
-                                    [this, ccid]() { synth->storage.controllers[ccid] = -1; });
+                                        midicc_names[synthClient->getControllerMIDIMapping(ccid)] + ")",
+                                    [this, ccid]() { synthClient->setControllerMIDIMapping(ccid, -1); });
                     eid++;
                 }
 
@@ -2484,13 +2465,10 @@ int32_t SurgeGUIEditor::controlModifierClicked(CControl *control, CButtonState b
                                 auto useS = s;
                                 if (useS == "")
                                     useS = "-";
-                                strxcpy(synthClient->getPatch().CustomControllerLabel[ccid],
-                                        useS.c_str(), 16);
-                                synthClient->getPatch().CustomControllerLabel[ccid][15] =
-                                    0; // to be sure
+                                synthClient->setControllerLabel(ccid, useS);
                                 ((CModulationSourceButton *)control)
                                     ->setlabel(
-                                        synthClient->getPatch().CustomControllerLabel[ccid]);
+                                        synthClient->getControllerLabel(ccid).c_str());
 
                                 control->setDirty();
                                 control->invalid();
@@ -2508,16 +2486,16 @@ int32_t SurgeGUIEditor::controlModifierClicked(CControl *control, CButtonState b
                 contextMenu->addSeparator(eid++);
                 addCallbackMenu(contextMenu, "Copy", [this, sc, lfo_id]() {
                     if (lfo_id >= 0)
-                        synth->storage.clipboard_copy(cp_lfo, sc, lfo_id);
+                        synthClient->clipboardCopy(cp_lfo, sc, lfo_id);
                     mostRecentCopiedMSEGState = msegEditState[sc][lfo_id];
                 });
                 eid++;
 
-                if (synth->storage.get_clipboard_type() == cp_lfo)
+                if (synthClient->getClipboardType() == cp_lfo)
                 {
                     addCallbackMenu(contextMenu, "Paste", [this, sc, lfo_id]() {
                         if (lfo_id >= 0)
-                            synth->storage.clipboard_paste(cp_lfo, sc, lfo_id);
+                            synthClient->clipboardPaste(cp_lfo, sc, lfo_id);
                         msegEditState[sc][lfo_id] = mostRecentCopiedMSEGState;
                         queue_refresh = true;
                     });
@@ -2701,10 +2679,9 @@ int32_t SurgeGUIEditor::controlModifierClicked(CControl *control, CButtonState b
             {
                 // FIXME - make this a checked toggle
                 auto b = addCallbackMenu(contextMenu, txt2, [this, p, control]() {
-                    SurgeSynthesizer::ID pid;
-                    if (synth->fromSynthSideId(p->id, pid))
+                    if (synthClient->isValidSynthSideID(p->id, pid))
                     {
-                        synth->setParameter01(pid, !p->val.b, false, false);
+                        synthClient->setParameter01(synthClient->idForParameter(p), !p->val.b, false, false);
                         repushAutomationFor(p);
                         synthClient->refreshEditor();
                     }
@@ -2753,7 +2730,7 @@ int32_t SurgeGUIEditor::controlModifierClicked(CControl *control, CButtonState b
 
                                 if (synth->fromSynthSideId(p->id, pid))
                                 {
-                                    synth->setParameter01(pid, 1 - ktsw, false, false);
+                                    synthClient->setParameter01(pid, 1 - ktsw, false, false);
                                     repushAutomationFor(p);
                                 }
                             }
@@ -2868,7 +2845,7 @@ int32_t SurgeGUIEditor::controlModifierClicked(CControl *control, CButtonState b
                                     addCallbackMenu(addTo, displaytxt.c_str(), [this, p, i, tag]() {
                                         float ef = Parameter::intScaledToFloat(i, p->val_max.i,
                                                                                p->val_min.i);
-                                        synth->setParameter01(synth->idForParameter(p), ef, false,
+                                        synthClient->setParameter01(synthClient->idForParameter(p), ef, false,
                                                               false);
                                         repushAutomationFor(p);
                                         synthClient->refreshEditor();
@@ -2901,7 +2878,7 @@ int32_t SurgeGUIEditor::controlModifierClicked(CControl *control, CButtonState b
 
                             auto b = addCallbackMenu(
                                 contextMenu, displaytxt, [this, ef, p, i]() {
-                                    synth->setParameter01(synth->idForParameter(p), ef, false,
+                                    synthClient->setParameter01(synthClient->idForParameter(p), ef, false,
                                                           false);
                                     repushAutomationFor(p);
                                     synthClient->refreshEditor();
@@ -3753,29 +3730,29 @@ int32_t SurgeGUIEditor::controlModifierClicked(CControl *control, CButtonState b
                 // FIXME - add unified menu here
                 auto hcmen = addCallbackMenu(
                     contextMenu, Surge::UI::toOSCaseForMenu(sc + " Hard Clip Disabled"), [this]() {
-                        synth->storage.sceneHardclipMode[current_scene] =
-                            SurgeStorage::BYPASS_HARDCLIP;
+                        synthClient->setHardclipMode(
+                            SurgeStorage::BYPASS_HARDCLIP, currentScene);
                     });
-                hcmen->setChecked(synth->storage.sceneHardclipMode[current_scene] ==
+                hcmen->setChecked(synthClient->getHardclipMode(current_scene) ==
                                   SurgeStorage::BYPASS_HARDCLIP);
                 eid++;
 
                 hcmen = addCallbackMenu(
                     contextMenu, Surge::UI::toOSCaseForMenu(sc + " Hard Clip at 0 dBFS"), [this]() {
-                        synth->storage.sceneHardclipMode[current_scene] =
-                            SurgeStorage::HARDCLIP_TO_0DBFS;
+                        synthClient->setHardclipMode(
+                            SurgeStorage::HARDCLIP_TO_0DBFS, currentScene);
                     });
-                hcmen->setChecked(synth->storage.sceneHardclipMode[current_scene] ==
+                hcmen->setChecked(synthClient->>getHardclipMode(current_scene) ==
                                   SurgeStorage::HARDCLIP_TO_0DBFS);
                 eid++;
 
                 hcmen = addCallbackMenu(contextMenu,
                                         Surge::UI::toOSCaseForMenu(sc + " Hard Clip at +18 dBFS"),
                                         [this]() {
-                                            synth->storage.sceneHardclipMode[current_scene] =
-                                                SurgeStorage::HARDCLIP_TO_18DBFS;
+                                            synthClient->getHardclipMode(
+                                                SurgeStorage::HARDCLIP_TO_18DBFS, current_scene);
                                         });
-                hcmen->setChecked(synth->storage.sceneHardclipMode[current_scene] ==
+                hcmen->setChecked(synthClient->getHardclipMode(current_scene) ==
                                   SurgeStorage::HARDCLIP_TO_18DBFS);
                 eid++;
             }
@@ -3787,20 +3764,20 @@ int32_t SurgeGUIEditor::controlModifierClicked(CControl *control, CButtonState b
 
                 auto hcmen = addCallbackMenu(
                     contextMenu, Surge::UI::toOSCaseForMenu("Global Hard Clip Disabled"),
-                    [this]() { synth->storage.hardclipMode = SurgeStorage::BYPASS_HARDCLIP; });
-                hcmen->setChecked(synth->storage.hardclipMode == SurgeStorage::BYPASS_HARDCLIP);
+                    [this]() { synthClient->setHardclipMode( SurgeStorage::BYPASS_HARDCLIP ); });
+                hcmen->setChecked(synthClient->getHardclipMode() == SurgeStorage::BYPASS_HARDCLIP);
                 eid++;
 
                 hcmen = addCallbackMenu(
                     contextMenu, Surge::UI::toOSCaseForMenu("Global Hard Clip at 0 dBFS"),
-                    [this]() { synth->storage.hardclipMode = SurgeStorage::HARDCLIP_TO_0DBFS; });
-                hcmen->setChecked(synth->storage.hardclipMode == SurgeStorage::HARDCLIP_TO_0DBFS);
+                    [this]() { synthClient->setHardclipMode(SurgeStorage::HARDCLIP_TO_0DBFS); });
+                hcmen->setChecked(synthClient->getHardclipMode() == SurgeStorage::HARDCLIP_TO_0DBFS);
                 eid++;
 
                 hcmen = addCallbackMenu(
                     contextMenu, Surge::UI::toOSCaseForMenu("Global Hard Clip at +18 dBFS"),
-                    [this]() { synth->storage.hardclipMode = SurgeStorage::HARDCLIP_TO_18DBFS; });
-                hcmen->setChecked(synth->storage.hardclipMode == SurgeStorage::HARDCLIP_TO_18DBFS);
+                    [this]() { synthClient->setHardclipMode( SurgeStorage::HARDCLIP_TO_18DBFS ); });
+                hcmen->setChecked(synthClient->getHardclipMode() == SurgeStorage::HARDCLIP_TO_18DBFS);
                 eid++;
             }
 
@@ -4715,7 +4692,7 @@ void SurgeGUIEditor::valueChanged(CControl *control)
                 bool force_integer = frame->getCurrentMouseButtons() & kControl;
                 SurgeSynthesizer::ID ptagid;
                 synth->fromSynthSideId(ptag, ptagid);
-                if (synth->setParameter01(ptagid, val, false, force_integer))
+                if (synthClient->setParameter01(ptagid, val, false, force_integer))
                 {
                     queue_refresh = true;
                     return;
@@ -5084,7 +5061,7 @@ void SurgeGUIEditor::toggleTuning()
 
     if (statusTune)
     {
-        bool hasmts = synth->storage.oddsound_mts_client && synth->storage.oddsound_mts_active;
+        bool hasmts = synthClient->hasODDSoundMTSClient() && synthClient->isODDSoundMTSActive();
         statusTune->setValue(this->synthClient->isStandardTuning() ? hasmts : 1);
     }
 
@@ -5768,21 +5745,21 @@ VSTGUI::COptionMenu *SurgeGUIEditor::makeTuningMenu(VSTGUI::CRect &menuRect, boo
         }
     });
 
-    if (tsMode && !this->synth->storage.oddsound_mts_client)
+    if (tsMode && !this->synthClient->hasODDSoundMTSClient())
     {
         addCallbackMenu(tuningSubMenu, Surge::UI::toOSCaseForMenu("Reconnect to MTS-ESP"),
                         [this]() { this->synth->storage.initialize_oddsound(); });
     }
     menuItem->setChecked(tsMode);
 
-    if (this->synth->storage.oddsound_mts_active && this->synth->storage.oddsound_mts_client)
+    if (this->synthClient->isODDSoundMTSActive() && this->synthClient->hasODDSoundMTSClient())
     {
         // a 'turn MTS off' menu
         addCallbackMenu(tuningSubMenu, Surge::UI::toOSCaseForMenu("Disconnect from MTS-ESP"),
                         [this]() {
-                            auto q = this->synth->storage.oddsound_mts_client;
-                            this->synth->storage.oddsound_mts_active = false;
-                            this->synth->storage.oddsound_mts_client = nullptr;
+                            auto q = this->synthClient->hasODDSoundMTSClient();
+                            this->synthClient->isODDSoundMTSActive() = false;
+                            this->synthClient->hasODDSoundMTSClient() = nullptr;
                             MTS_DeregisterClient(q);
                         });
 
@@ -5808,7 +5785,7 @@ VSTGUI::COptionMenu *SurgeGUIEditor::makeTuningMenu(VSTGUI::CRect &menuRect, boo
         mm->setEnabled(false);
 
         // an 'MTS scale name' disabled menu
-        std::string mtsScale = MTS_GetScaleName(synth->storage.oddsound_mts_client);
+        std::string mtsScale = MTS_GetScaleName(synthClient->hasODDSoundMTSClient());
         mm = addCallbackMenu(tuningSubMenu, mtsScale, []() {});
         mm->setEnabled(false);
 
@@ -8258,7 +8235,7 @@ void SurgeGUIEditor::showMSEGEditor()
 
     auto lfodata = &synthClient->getPatch().scene[current_scene].lfo[lfo_id];
     auto ms = &synthClient->getPatch().msegs[current_scene][lfo_id];
-    auto mse = new MSEGEditor(synthClient->getStorageInterface(), lfodata, ms, &msegEditState[current_scene][lfo_id],
+    auto mse = new MSEGEditor(synthClient->getStorageUnsafe(), lfodata, ms, &msegEditState[current_scene][lfo_id],
                               currentSkin, bitmapStore);
     auto vs = mse->getViewSize().getWidth();
     float xp = (currentSkin->getWindowSizeX() - (vs + 8)) * 0.5;
@@ -8289,15 +8266,15 @@ void SurgeGUIEditor::showMSEGEditor()
 
 void SurgeGUIEditor::repushAutomationFor(Parameter *p)
 {
-    auto id = synth->idForParameter(p);
+    auto id = synthClient->idForParameter(p);
     synth->sendParameterAutomation(id, synth->getParameter01(id));
 }
 
 void SurgeGUIEditor::showAboutBox(int devModeGrid)
 {
     CRect wsize(0, 0, getWindowSizeX(), getWindowSizeY());
-    aboutbox = new CAboutBox(wsize, this, synthClient->getStorageInterface(), synth->hostProgram,
-                             synth->juceWrapperType, currentSkin, bitmapStore, devModeGrid);
+    aboutbox = new CAboutBox(wsize, this, synthClient->getStorageInterface(), synthClient->getHostProgram(),
+                             synthClient->getJuceWrapperType(), currentSkin, bitmapStore, devModeGrid);
     aboutbox->setVisible(true);
     getFrame()->addView(aboutbox);
 }

@@ -21,6 +21,7 @@
 #include "SurgeStorage.h"
 
 class SurgeSynthesizer;
+class Parameter;
 
 struct timedata
 {
@@ -59,10 +60,13 @@ class SurgeSynthClient
 
     bool isEngineHalted();
 
+
+
     void enqueuePatchLoad(const int &id);
     void enqueuePatchFileLoad(const std::string &id);
     bool hasEnqueuedPatch() const;
     int getPatchId() const; // synth->patchid
+    int getPatchCategoryId() const;
     std::string getPatchName() const; // synth->storage.getPatch().name
     std::string getPatchCategory() const;
     std::string getPatchAuthor() const;
@@ -76,6 +80,8 @@ class SurgeSynthClient
     bool isStandardMapping() const;
     const Tunings::Scale &getCurrentScale() const;
     const Tunings::KeyboardMapping &getCurrentMapping() const;
+    bool hasODDSoundMTSClient() const; // synth->storage.oddsound_mts_client
+    bool isODDSoundMTSActive() const; // synth->storage.oddsound_mts_active
 
     bool isMpeEnabled() const; // return synth->mpeEnabled;
     void setMpeEnabled(bool toThis);
@@ -97,11 +103,16 @@ class SurgeSynthClient
     bool isModsourceUsed(modsources i) const;
     bool isModDestUsed(long i) const ;
     float getModulation(long, modsources) const;
+    float getModDepth(long, modsources) const; // what's the difference?
     void setModulation(long, modsources);
     void clearModulation(long ptag, modsources i);
 
     bool hasActiveFxAt(int slot) const; // synht->fx[slot] != nullptr
     float getFxVuLevel(int fxslot, int channel) const; // synth->fx[current_fx]->vu[(i << 1) + channel]
+    int getFxVuType(int fxslot, int index) const; // synth->fx[slot]->vu_type(i);
+    int getFxVuPos(int fxslot, int index) const; // synth->fx[slot]->vu_pos(i);
+    const char* getFxGroupLabel(int fxslot, int index) const; // synth->fx[slot]->group_label(i);
+    int getFxGroupLabelYPos(int fxslot, int index) const; // synth->fx[slot]->group_label_ypos(i);
 
     SurgeStorageInterface *getStorageInterface() const;
 
@@ -131,6 +142,14 @@ class SurgeSynthClient
      */
     ParameterProxy *getParamProxy(int i);
 
+
+    /*
+     * Clipboard
+     */
+    int getClipboardType() const; // synht->storage.getcbt
+    void clipboardPaste(int, int, int);
+    void clipboardCopy(int, int, int);
+
     /*
      * The client has a *const* view of the SurgePatch. You don't want to use this for direct
      * value access, really just ID access, but I'm too lazy to strictly enforce this in the API
@@ -138,8 +157,10 @@ class SurgeSynthClient
     const SurgePatch &getPatch();
     SurgePatch &getPatchUnsafe();
 
-    std::string getControllerLabel(int c);
-    int getControllerMIDIMapping(int c);
+    std::string getControllerLabel(int c) const;
+    void setControllerLabel(int c, const std::string &s);
+    int getControllerMIDIMapping(int c) const;
+    void setControllerMIDIMapping(int c, int midicc); // synth->storage.controllers[c] = midicc;
 
     /*
      * The synth when it recieves automation events can force a reset of a parameter or control
@@ -163,12 +184,20 @@ class SurgeSynthClient
     void getParameterName(int i, char *pname) const; // FIXME that signatur tho
     void getParameterDisplay(int i, char *pname) const;
     float getParameter01(int i) const;
+    int idForParameter(const Parameter *p) const; // return p->id
+    void setParameter01(int id, float, bool, bool );
 
     /*
      * Patch maangement
      */
     void incrementPatch(bool, bool); // just passthrough to synth
     void incrementCategory(bool);
+
+    const std::string &getHostProgram() const; // synth->hostProgram
+    const std::string &getJuceWrapperType() const;
+
+    void setHardclipMode(SurgeStorage::HardClipMode m, int scene = -1); // global at -1
+    SurgeStorage::HardClipMode getHardclipMode(int scene = -1) const;
 
   private:
     SurgeSynthesizer *synth;
