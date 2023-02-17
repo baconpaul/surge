@@ -20,6 +20,8 @@
  */
 #include "gui/UndoManager.h"
 
+static bool printChannels{true};
+
 //==============================================================================
 SurgeSynthProcessor::SurgeSynthProcessor()
     : juce::AudioProcessor(BusesProperties()
@@ -197,8 +199,15 @@ void SurgeSynthProcessor::releaseResources()
 
 bool SurgeSynthProcessor::isBusesLayoutSupported(const BusesLayout &layouts) const
 {
+    printChannels = true;
+    //Surge::Debug::stackTraceToStdout(14);
     auto mocs = layouts.getMainOutputChannelSet();
     auto mics = layouts.getMainInputChannelSet();
+
+    std::cout << __FILE__ << ":" << __LINE__ << " (" << __func__
+              << ") inputDisabled=" << mics.isDisabled()
+              << " outputDisabled=" << mocs.isDisabled()
+                                       << std::endl;
 
     auto outputValid = (mocs == juce::AudioChannelSet::stereo()) || (mocs.isDisabled());
     auto inputValid = (mics == juce::AudioChannelSet::stereo()) ||
@@ -209,9 +218,20 @@ bool SurgeSynthProcessor::isBusesLayoutSupported(const BusesLayout &layouts) con
      */
     auto c1 = layouts.getNumChannels(false, 1);
     auto c2 = layouts.getNumChannels(false, 2);
-    auto sceneOut = (c1 == 0 && c2 == 0) || (c1 == 2 && c2 == 2);
+    auto sceneOut = (c1 == 0 || c1 == 2) && (c2 == 0 || c2 == 2);
 
-    return outputValid && inputValid && sceneOut;
+    //std::cout << "isBusLayoutSuported " << outputValid << " " << inputValid << " " << sceneOut << " " << c1 << " " << c2 << std::endl;
+
+    auto res = outputValid && inputValid && sceneOut;
+
+    std::cout << __FILE__ << ":" << __LINE__ << " (" << __func__
+              << ") out1Chan=" << c1
+              << " out2Chan=" << c2
+              << " inputValid=" << inputValid
+              << " outputValid=" << inputValid
+              << " res=" << res
+              << std::endl;
+    return res;
 }
 
 void SurgeSynthProcessor::processBlock(juce::AudioBuffer<float> &buffer,
@@ -263,6 +283,18 @@ void SurgeSynthProcessor::processBlock(juce::AudioBuffer<float> &buffer,
     auto sceneAOutput = getBusBuffer(buffer, false, 1);
     auto sceneBOutput = getBusBuffer(buffer, false, 2);
 
+    auto sceneABus = getBus(false, 1);
+    auto sceneBBus = getBus(false, 1);
+    if (printChannels)
+    {
+        printChannels = false;
+        std::cout << __FILE__ << ":" << __LINE__ << " (" << __func__ << ") aEnabled="
+                  << sceneABus->isEnabled() << " aChan=" << sceneAOutput.getNumChannels()
+                  << " bEnabled="
+                      << sceneBBus->isEnabled() << " bChan=" << sceneBOutput.getNumChannels() << std::endl;
+
+    }
+
     auto midiIt = midiMessages.findNextSamplePosition(0);
     int nextMidi = -1;
     if (midiIt != midiMessages.cend())
@@ -313,23 +345,29 @@ void SurgeSynthProcessor::processBlock(juce::AudioBuffer<float> &buffer,
         *outL = surge->output[0][blockPos];
         *outR = surge->output[1][blockPos];
 
-        if (surge->activateExtraOutputs && sceneAOutput.getNumChannels() == 2 &&
-            sceneBOutput.getNumChannels() == 2)
+        if (surge->activateExtraOutputs)
         {
-            auto sAL = sceneAOutput.getWritePointer(0, i);
-            auto sAR = sceneAOutput.getWritePointer(1, i);
-            auto sBL = sceneBOutput.getWritePointer(0, i);
-            auto sBR = sceneBOutput.getWritePointer(1, i);
-
-            if (sAL && sAR)
+            if (sceneAOutput.getNumChannels() == 2)
             {
-                *sAL = surge->sceneout[0][0][blockPos];
-                *sAR = surge->sceneout[0][1][blockPos];
+                auto sAL = sceneAOutput.getWritePointer(0, i);
+                auto sAR = sceneAOutput.getWritePointer(1, i);
+                if (sAL && sAR)
+                {
+                    *sAL = surge->sceneout[0][0][blockPos];
+                    *sAR = surge->sceneout[0][1][blockPos];
+                }
             }
-            if (sBL && sBR)
+
+            if (sceneBOutput.getNumChannels() == 2)
             {
-                *sBL = surge->sceneout[1][0][blockPos];
-                *sBR = surge->sceneout[1][1][blockPos];
+                auto sBL = sceneBOutput.getWritePointer(0, i);
+                auto sBR = sceneBOutput.getWritePointer(1, i);
+
+                if (sBL && sBR)
+                {
+                    *sBL = surge->sceneout[1][0][blockPos];
+                    *sBR = surge->sceneout[1][1][blockPos];
+                }
             }
         }
 
