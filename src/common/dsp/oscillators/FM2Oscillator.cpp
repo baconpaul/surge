@@ -33,10 +33,10 @@ FM2Oscillator::FM2Oscillator(SurgeStorage *storage, OscillatorStorage *oscdata, 
 
 double calcmd(double x) { return x * x * x * 8.0 * M_PI; }
 
-void FM2Oscillator::init(float pitch, bool is_display, bool nonzero_init_drift)
+void FM2Oscillator::init(float pitch, bool is_display, bool nonzero_init_drift, float initialPhase)
 {
-    phase =
-        (is_display || oscdata->retrigger.val.b) ? 0.f : (2.0 * M_PI * storage->rand_01() - M_PI);
+    phase = (is_display || oscdata->retrigger.val.b) ? (2.0 * M_PI * initialPhase)
+                                                     : (2.0 * M_PI * storage->rand_01() - M_PI);
     oldout1 = 0.0;
     oldout2 = 0.0;
     driftLFO.init(nonzero_init_drift);

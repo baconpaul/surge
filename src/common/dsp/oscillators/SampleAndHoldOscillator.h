@@ -46,8 +46,8 @@ class SampleAndHoldOscillator : public AbstractBlitOscillator
     };
 
     SampleAndHoldOscillator(SurgeStorage *storage, OscillatorStorage *oscdata, pdata *localcopy);
-    virtual void init(float pitch, bool is_display = false,
-                      bool nonzero_init_drift = true) override;
+    virtual void init(float pitch, bool is_display = false, bool nonzero_init_drift = true,
+                      float initialPhase = 0.f) override;
     virtual void init_ctrltypes() override;
     virtual void init_default_values() override;
     virtual void process_block(float pitch, float drift = 0.f, bool stereo = false, bool FM = false,

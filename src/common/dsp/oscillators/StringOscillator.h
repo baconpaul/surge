@@ -93,7 +93,8 @@ class StringOscillator : public Oscillator
 
     ~StringOscillator();
 
-    virtual void init(float pitch, bool is_display = false, bool nonzero_drift = true) override;
+    virtual void init(float pitch, bool is_display = false, bool nonzero_drift = true,
+                      float initialPhase = 0.f) override;
     virtual void init_ctrltypes(int scene, int oscnum) override { init_ctrltypes(); };
     virtual void init_ctrltypes() override;
     virtual void init_default_values() override;

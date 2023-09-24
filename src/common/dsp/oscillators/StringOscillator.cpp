@@ -106,7 +106,7 @@ StringOscillator::~StringOscillator()
     }
 };
 
-void StringOscillator::init(float pitch, bool is_display, bool nzi)
+void StringOscillator::init(float pitch, bool is_display, bool nzi, float initialPhase)
 {
     // fixme - alloc in is_display but for now just deal with the race
     // delayLine[0] = std::make_unique<SSESincDelayLine<16384>>();
@@ -190,7 +190,7 @@ void StringOscillator::init(float pitch, bool is_display, bool nzi)
     }
 
     auto mode = (exciter_modes)oscdata->p[str_exciter_mode].val.i;
-    phase1 = 0.0, phase2 = 0.0;
+    phase1 = initialPhase, phase2 = initialPhase;
 
     if (!oscdata->retrigger.val.b && !is_display)
     {

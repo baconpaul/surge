@@ -180,7 +180,8 @@ ClassicOscillator::ClassicOscillator(SurgeStorage *storage, OscillatorStorage *o
 
 ClassicOscillator::~ClassicOscillator() {}
 
-void ClassicOscillator::init(float pitch, bool is_display, bool nonzero_init_drift)
+void ClassicOscillator::init(float pitch, bool is_display, bool nonzero_init_drift,
+                             float initialPhase)
 {
     assert(storage);
     first_run = true;
@@ -227,17 +228,20 @@ void ClassicOscillator::init(float pitch, bool is_display, bool nonzero_init_dri
 
     for (int i = 0; i < n_unison; i++)
     {
+        double detune = oscdata->p[co_unison_detune].get_extended(localcopy[id_detune].f) *
+                        (detune_bias * float(i) + detune_offset);
+
         if (oscdata->retrigger.val.b || is_display)
         {
-            oscstate[i] = 0.f;
-            syncstate[i] = 0.f;
+            double st = 0.5 * initialPhase * storage->note_to_pitch_inv_tuningctr(detune);
+
+            oscstate[i] = st;
+            syncstate[i] = st;
             last_level[i] = 0.f;
         }
         else
         {
             double drand = (double)storage->rand_01();
-            double detune = oscdata->p[co_unison_detune].get_extended(localcopy[id_detune].f) *
-                            (detune_bias * float(i) + detune_offset);
             double st = 0.5 * drand * storage->note_to_pitch_inv_tuningctr(detune);
             oscstate[i] = st;
             syncstate[i] = st;

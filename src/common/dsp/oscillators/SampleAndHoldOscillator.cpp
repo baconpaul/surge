@@ -48,7 +48,8 @@ SampleAndHoldOscillator::SampleAndHoldOscillator(SurgeStorage *storage, Oscillat
 
 SampleAndHoldOscillator::~SampleAndHoldOscillator() {}
 
-void SampleAndHoldOscillator::init(float pitch, bool is_display, bool nonzero_init_drift)
+void SampleAndHoldOscillator::init(float pitch, bool is_display, bool nonzero_init_drift,
+                                   float initialPhase)
 {
     assert(storage);
     first_run = true;
@@ -105,19 +106,20 @@ void SampleAndHoldOscillator::init(float pitch, bool is_display, bool nonzero_in
     int i;
     for (i = 0; i < n_unison; i++)
     {
+        double detune = oscdata->p[shn_unison_detune].get_extended(localcopy[id_detune].f) *
+                        (detune_bias * float(i) + detune_offset);
+
         if (oscdata->retrigger.val.b || is_display)
         {
-            oscstate[i] = 0;
-            syncstate[i] = 0;
+            double st = initialPhase * storage->note_to_pitch_tuningctr(detune) * 0.5;
+
+            oscstate[i] = st;
+            syncstate[i] = st;
         }
         else
         {
             double drand = (double)storage->rand_01();
-            double detune = oscdata->p[shn_unison_detune].get_extended(localcopy[id_detune].f) *
-                            (detune_bias * float(i) + detune_offset);
             double st = drand * storage->note_to_pitch_tuningctr(detune) * 0.5;
-            drand = (double)storage->rand_01();
-            double ot = drand * storage->note_to_pitch_tuningctr(detune);
             oscstate[i] = st;
             syncstate[i] = st;
         }

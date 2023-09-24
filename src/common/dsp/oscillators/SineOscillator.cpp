@@ -104,7 +104,7 @@ void SineOscillator::prepare_unison(int voices)
         playingramp[i] = 0;
 }
 
-void SineOscillator::init(float pitch, bool is_display, bool nonzero_init_drift)
+void SineOscillator::init(float pitch, bool is_display, bool nonzero_init_drift, float initialPhase)
 {
     n_unison = limit_range(oscdata->p[sine_unison_voices].val.i, 1, MAX_UNISON);
     limit_range(oscdata->p[sine_unison_voices].val.i, 1, MAX_UNISON);
@@ -119,7 +119,8 @@ void SineOscillator::init(float pitch, bool is_display, bool nonzero_init_drift)
     for (int i = 0; i < n_unison; i++)
     {
         phase[i] = // phase in range -PI to PI
-            (oscdata->retrigger.val.b || is_display) ? 0.f : 2.0 * M_PI * storage->rand_01() - M_PI;
+            (oscdata->retrigger.val.b || is_display) ? (2.0 * M_PI * initialPhase)
+                                                     : 2.0 * M_PI * storage->rand_01() - M_PI;
         lastvalue[0][i] = 0.f;
         lastvalue[1][i] = 0.f;
         driftLFO[i].init(nonzero_init_drift);

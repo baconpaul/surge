@@ -31,10 +31,10 @@ FM3Oscillator::FM3Oscillator(SurgeStorage *storage, OscillatorStorage *oscdata, 
 {
 }
 
-void FM3Oscillator::init(float pitch, bool is_display, bool nonzero_init_drift)
+void FM3Oscillator::init(float pitch, bool is_display, bool nonzero_init_drift, float initialPhase)
 {
-    phase =
-        (is_display || oscdata->retrigger.val.b) ? 0.f : (2.0 * M_PI * storage->rand_01() - M_PI);
+    phase = (is_display || oscdata->retrigger.val.b) ? (2.0 * M_PI * initialPhase)
+                                                     : (2.0 * M_PI * storage->rand_01() - M_PI);
     oldout1 = 0.f;
     oldout2 = 0.f;
     driftLFO.init(nonzero_init_drift);

@@ -322,7 +322,7 @@ float TwistOscillator::tuningAwarePitch(float pitch)
     return pitch;
 }
 
-void TwistOscillator::init(float pitch, bool is_display, bool nonzero_drift)
+void TwistOscillator::init(float pitch, bool is_display, bool nonzero_drift, float initialPhase)
 {
     voice->Init(alloc.get());
 
@@ -344,6 +344,10 @@ void TwistOscillator::init(float pitch, bool is_display, bool nonzero_drift)
     if (!(oscdata->retrigger.val.b || is_display))
     {
         cycleInSamples *= (1.0 + storage->rand_01());
+    }
+    else
+    {
+        cycleInSamples *= (1.0 + initialPhase);
     }
 
     memset(fmlagbuffer, 0, (BLOCK_SIZE_OS << 1) * sizeof(float));

@@ -45,8 +45,8 @@ class FM2Oscillator : public Oscillator
     };
 
     FM2Oscillator(SurgeStorage *storage, OscillatorStorage *oscdata, pdata *localcopy);
-    virtual void init(float pitch, bool is_display = false,
-                      bool nonzero_init_drift = true) override;
+    virtual void init(float pitch, bool is_display = false, bool nonzero_init_drift = true,
+                      float initialPhase = 0.f) override;
     virtual void process_block(float pitch, float drift = 0.f, bool stereo = false, bool FM = false,
                                float FMdepth = 0.f) override;
     virtual ~FM2Oscillator();

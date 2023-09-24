@@ -62,7 +62,8 @@ template <bool is_init> void WindowOscillator::update_lagvals()
     }
 }
 
-void WindowOscillator::init(float pitch, bool is_display, bool nonzero_init_drift)
+void WindowOscillator::init(float pitch, bool is_display, bool nonzero_init_drift,
+                            float initialPhase)
 {
     memset(&Window, 0, sizeof(Window));
 
@@ -89,7 +90,9 @@ void WindowOscillator::init(float pitch, bool is_display, bool nonzero_init_drif
 
         if (oscdata->retrigger.val.b || is_display)
         {
-            Window.Pos[0] = (storage->WindowWT.size + storage->WindowWT.size) << 16;
+            // Check this
+            Window.Pos[0] =
+                (storage->WindowWT.size + (int)((1 + initialPhase) * storage->WindowWT.size)) << 16;
         }
         else
         {

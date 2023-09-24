@@ -39,7 +39,8 @@ WavetableOscillator::WavetableOscillator(SurgeStorage *storage, OscillatorStorag
 
 WavetableOscillator::~WavetableOscillator() {}
 
-void WavetableOscillator::init(float pitch, bool is_display, bool nonzero_init_drift)
+void WavetableOscillator::init(float pitch, bool is_display, bool nonzero_init_drift,
+                               float initialPhase)
 {
     assert(storage);
     first_run = true;
@@ -105,7 +106,7 @@ void WavetableOscillator::init(float pitch, bool is_display, bool nonzero_init_d
         {
             if (oscdata->retrigger.val.b || is_display)
             {
-                oscstate[i] = 0.f;
+                oscstate[i] = initialPhase;
             }
             else
             {
