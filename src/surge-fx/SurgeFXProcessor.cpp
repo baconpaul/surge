@@ -411,6 +411,12 @@ void SurgefxAudioProcessor::processBlock(juce::AudioBuffer<float> &buffer,
             outR[i] = std::clamp(outR[i], -2.f, 2.f);
         }
     }
+
+    // Obvioulsy nuke this
+    static int64_t countSinceStart{0};
+    if (countSinceStart == 90)
+        storage->reportError("Blammo", "You got blammoed");
+    countSinceStart ++;
 }
 
 //==============================================================================
