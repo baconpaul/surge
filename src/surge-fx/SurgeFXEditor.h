@@ -94,6 +94,12 @@ class SurgefxAudioProcessorEditor : public juce::AudioProcessorEditor, juce::Asy
 
     static constexpr int baseWidth = 600, baseHeight = 55 * 6 + 80 + topSection;
 
+    void promptForTypeinValue(const std::string &prompt,
+                              const std::string &initValue,
+                              std::function<void(const std::string &)> cb);
+    struct PromptOverlay;
+    std::unique_ptr<PromptOverlay> promptOverlay;
+
   private:
     struct AccSlider : public juce::Slider
     {

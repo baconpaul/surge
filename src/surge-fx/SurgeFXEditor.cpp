@@ -579,6 +579,16 @@ void SurgefxAudioProcessorEditor::showMenu()
     o = o.withTargetScreenArea(r).withPreferredPopupDirection(
         juce::PopupMenu::Options::PopupDirection::downwards);
 
+    // Do not merge this bit active
+    p.addItem("Prompt for Foo", [w = juce::Component::SafePointer(this)]() {
+        if (!w)
+            return;
+        w->promptForTypeinValue("How many fish in a barrel", "17", [w](const auto &a) {
+            std::cout << "You typed in " << a << std::endl;
+        });
+    });
+    // end do not merge
+
     p.showMenuAsync(o);
 }
 
@@ -706,4 +716,89 @@ void SurgefxAudioProcessorEditor::idle()
             fxNameLabel->setText("Surge XT Effects", juce::NotificationType::dontSendNotification);
         }
     }
+}
+
+struct SurgefxAudioProcessorEditor::PromptOverlay : juce::Component,
+                                                    juce::TextEditor::Listener
+{
+    std::string prompt;
+    std::unique_ptr<juce::TextEditor> ed;
+    std::function<void(const std::string &)> cb{nullptr};
+
+    PromptOverlay()
+    {
+        ed = std::make_unique<juce::TextEditor>();
+        ed->setFont(juce::Font(28));
+        ed->setColour(juce::TextEditor::ColourIds::textColourId, juce::Colours::white);
+        ed->setJustification(juce::Justification::centred);
+        ed->addListener(this);
+        ed->setWantsKeyboardFocus(true);
+        addAndMakeVisible(*ed);
+    }
+
+    void setInitVal(const std::string &s)
+    {
+        ed->clear();
+        ed->setText(s, juce::NotificationType::dontSendNotification);
+        ed->applyFontToAllText(juce::Font(28));
+        ed->applyColourToAllText(juce::Colours::white);
+        ed->repaint();
+    }
+
+    void resized() override
+    {
+        auto teh = 35;
+        auto h = (getHeight() - teh) * 0.5;
+        ed->setBounds(10,h, getWidth()-20, teh);
+    }
+
+    void paint(juce::Graphics &g) override
+    {
+        g.fillAll(juce::Colours::black.withAlpha(0.9f));
+        g.setColour(juce::Colours::white);
+        g.setFont(28);
+        g.drawMultiLineText(prompt, 0, 50, getWidth(), juce::Justification::centred);
+    }
+
+    void textEditorReturnKeyPressed(juce::TextEditor &editor) override
+    {
+        if (cb)
+            cb(ed->getText().toStdString());
+        dismiss();
+    }
+
+    void textEditorEscapeKeyPressed(juce::TextEditor &editor) override
+    {
+        dismiss();
+    }
+
+    void visibilityChanged() override
+    {
+        if (isVisible())
+            ed->setWantsKeyboardFocus(true);
+    }
+
+    void dismiss()
+    {
+        cb =nullptr;
+        setVisible(false);
+    }
+};
+
+void SurgefxAudioProcessorEditor::promptForTypeinValue(const std::string &prompt, const std::string &initValue, std::function<void(const std::string &)> cb)
+{
+    if (promptOverlay && promptOverlay->isVisible())
+        return;
+
+    if (!promptOverlay)
+        promptOverlay = std::make_unique<PromptOverlay>();
+
+    promptOverlay->prompt = prompt;
+    promptOverlay->cb= cb;
+    promptOverlay->setInitVal(initValue);
+
+    promptOverlay->setBounds(getLocalBounds());
+    addAndMakeVisible(*promptOverlay);
+
+    std::cout << "Showing " << prompt << std::endl;
 }
