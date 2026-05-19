@@ -11,6 +11,7 @@
 #include "SurgeGUIEditor.h"
 #include "SurgeJUCEHelpers.h"
 #include "SurgeGUIEditorTags.h"
+#include "SurgeGUIUtils.h"
 #include "dsp/effects/ConditionerEffect.h"
 #include "dsp/effects/ConvolutionEffect.h"
 
@@ -852,7 +853,7 @@ void CurrentFxDisplay::convolutionLayout()
 
     if (had_focus)
     {
-        menu->grabKeyboardFocus();
+        Surge::GUI::grabKeyboardFocusIfAllowed(storage, menu.get());
         had_focus = false;
     }
 }

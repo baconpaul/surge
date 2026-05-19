@@ -51,6 +51,18 @@ bool getIsStandalone();
 void setHostRequiresShowCursor(bool);
 bool getHostRequiresShowCursor();
 
+// Some hosts (Logic Pro AU, GarageBand AU) historically expect us to grab
+// keyboard focus when overlays/editors appear. Default the user preference
+// on in those hosts; off everywhere else.
+void setFocusGrabsDefaultOn(bool);
+
+// Resolves the user preference for grabbing keyboard focus on show/refresh,
+// using the host-aware default above when the user has not set one.
+bool focusGrabsAllowed(SurgeStorage *storage);
+
+// Convenience wrapper: grab focus on c only when the preference allows.
+void grabKeyboardFocusIfAllowed(SurgeStorage *storage, juce::Component *c);
+
 } // namespace GUI
 } // namespace Surge
 

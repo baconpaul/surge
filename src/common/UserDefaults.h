@@ -86,6 +86,7 @@ enum DefaultKey
     UseKeyboardShortcuts_Plugin,
     UseKeyboardShortcuts_Standalone,
     MenuAndEditKeybindingsFollowKeyboardFocus,
+    GrabKeyboardFocusOnShow,
     UseNarratorAnnouncements,
     UseNarratorAnnouncementsForPatchTypeahead,
     ExpandModMenusWithSubMenus,

@@ -1517,6 +1517,14 @@ juce::PopupMenu SurgeGUIEditor::makeAccesibilityMenu(const juce::Point<int> &rec
                             Surge::Storage::FocusModEditorAfterAddModulationFrom, !focusModEditor);
                     });
 
+    bool grabFocus = Surge::GUI::focusGrabsAllowed(&(this->synth->storage));
+
+    accMenu.addItem(
+        Surge::GUI::toOSCase("Grab Keyboard Focus on Show"), true, grabFocus, [this, grabFocus]() {
+            Surge::Storage::updateUserDefaultValue(
+                &(this->synth->storage), Surge::Storage::GrabKeyboardFocusOnShow, !grabFocus);
+        });
+
     return accMenu;
 }
 

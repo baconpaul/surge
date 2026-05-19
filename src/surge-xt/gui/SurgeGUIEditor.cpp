@@ -390,6 +390,12 @@ SurgeGUIEditor::SurgeGUIEditor(SurgeSynthEditor *jEd, SurgeSynthesizer *synth)
     Surge::GUI::setHostRequiresShowCursor(juce::PluginHostType().isLogic() ||
                                           juce::PluginHostType().isGarageBand());
 
+    // Logic Pro AU and GarageBand AU expect us to grab keyboard focus when
+    // overlays/editors appear; default the preference on there, off elsewhere.
+    Surge::GUI::setFocusGrabsDefaultOn(
+        juceEditor->processor.wrapperType == juce::AudioProcessor::wrapperType_AudioUnit &&
+        (juce::PluginHostType().isLogic() || juce::PluginHostType().isGarageBand()));
+
     currentSkin = Surge::GUI::SkinDB::get()->defaultSkin(&(this->synth->storage));
 
     // init the size of the plugin
@@ -649,7 +655,8 @@ void SurgeGUIEditor::idle()
             if (!(alert && alert->isVisible()))
             {
                 componentToFocusAfterAlertDismissal->setWantsKeyboardFocus(true);
-                componentToFocusAfterAlertDismissal->grabKeyboardFocus();
+                Surge::GUI::grabKeyboardFocusIfAllowed(&(this->synth->storage),
+                                                       componentToFocusAfterAlertDismissal);
             }
         }
 
@@ -2350,7 +2357,7 @@ void SurgeGUIEditor::openOrRecreateEditor()
 
     if (!somethingHasFocus && patchSelector && patchSelector->isShowing())
     {
-        patchSelector->grabKeyboardFocus();
+        Surge::GUI::grabKeyboardFocusIfAllowed(&(this->synth->storage), patchSelector.get());
     }
 
     sendStructureChangeIn = 120;
@@ -3110,7 +3117,11 @@ void SurgeGUIEditor::setRecommendedAccessibility()
                                            Surge::Storage::ExpandModMenusWithSubMenus, true);
     Surge::Storage::updateUserDefaultValue(
         &(this->synth->storage), Surge::Storage::FocusModEditorAfterAddModulationFrom, true);
-    oss << "Expanded Modulation Menus and Modulation Focus.";
+    oss << "Expanded Modulation Menus and Modulation Focus; ";
+
+    Surge::Storage::updateUserDefaultValue(&(this->synth->storage),
+                                           Surge::Storage::GrabKeyboardFocusOnShow, true);
+    oss << "Grab Keyboard Focus on Show.";
 
     enqueueAccessibleAnnouncement(oss.str());
 }

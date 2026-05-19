@@ -361,6 +361,10 @@ std::string defaultKeyToString(DefaultKey k)
         r = "menuAndEditKeybindingsFollowKeyboardFocus";
         break;
 
+    case GrabKeyboardFocusOnShow:
+        r = "grabKeyboardFocusOnShow";
+        break;
+
     case ExpandModMenusWithSubMenus:
         r = "expandModMenusWithSubmenus";
         break;

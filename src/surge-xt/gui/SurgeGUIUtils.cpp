@@ -85,6 +85,24 @@ bool allowKeyboardEdits(SurgeStorage *storage)
     return res;
 }
 
+static bool focusGrabsDefaultOn{false};
+void setFocusGrabsDefaultOn(bool b) { focusGrabsDefaultOn = b; }
+
+bool focusGrabsAllowed(SurgeStorage *storage)
+{
+    if (!storage)
+        return focusGrabsDefaultOn;
+
+    return Surge::Storage::getUserDefaultValue(storage, Surge::Storage::GrabKeyboardFocusOnShow,
+                                               focusGrabsDefaultOn);
+}
+
+void grabKeyboardFocusIfAllowed(SurgeStorage *storage, juce::Component *c)
+{
+    if (c && focusGrabsAllowed(storage))
+        c->grabKeyboardFocus();
+}
+
 /*
  * Returns true if the two lines (p0-p1 and p2-p3) intersect.
  * In addition, if the lines intersect, the intersection point may be stored to floats i_x and i_y.
